@@ -10,12 +10,14 @@ using System.Threading;
 using System.Linq;
 using ServiceStack;
 using System.Security.Cryptography;
-
+using Grpc.Net.Client;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 namespace LNDroneController.LND
 {
     public class LNDNodeConnection
     {
-        private Grpc.Core.Channel gRPCChannel;
+        private GrpcChannel gRPCChannel;
         private Lightning.LightningClient LightningClient;
         private Router.RouterClient RouterClient;
 
@@ -33,24 +35,30 @@ namespace LNDroneController.LND
             string connectionString = Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING");
 
             var cert = System.IO.File.ReadAllText(tlsCertFilePath);
-            var sslCreds = new SslCredentials(cert);
 
+            var httpClientHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true
+            };
+            var x509Cert = new X509Certificate2(tlsCertFilePath);
+            httpClientHandler.ClientCertificates.Add(x509Cert);
             byte[] macaroonBytes = System.IO.File.ReadAllBytes(macoroonFilePath);
             var macaroon = BitConverter.ToString(macaroonBytes).Replace("-", ""); // hex format stripped of "-" chars
 
-
-            // combine the cert credentials and the macaroon auth credentials using interceptors
-            // so every call is properly encrypted and authenticated
-            Task AddMacaroon(AuthInterceptorContext context, Metadata metadata)
+            var credentials = CallCredentials.FromInterceptor((_, metadata) =>
             {
                 metadata.Add(new Metadata.Entry("macaroon", macaroon));
                 return Task.CompletedTask;
-            }
-            var macaroonInterceptor = new AsyncAuthInterceptor(AddMacaroon);
-            var combinedCreds = ChannelCredentials.Create(sslCreds, CallCredentials.FromInterceptor(macaroonInterceptor));
-
-            // finally pass in the combined credentials when creating a channel
-            gRPCChannel = new Grpc.Core.Channel(host, combinedCreds);
+            });
+            gRPCChannel = GrpcChannel.ForAddress(
+                "https://" + host,
+                new GrpcChannelOptions
+                {
+                    DisposeHttpClient = true,
+                    HttpHandler = httpClientHandler,
+                    Credentials = ChannelCredentials.Create(new SslCredentials(), credentials),
+                    MaxReceiveMessageSize = 128000000
+                });
 
             LightningClient = new Lnrpc.Lightning.LightningClient(gRPCChannel);
             RouterClient = new Routerrpc.Router.RouterClient(gRPCChannel);
@@ -65,9 +73,10 @@ namespace LNDroneController.LND
             }
         }
 
-        public async Task Stop()
+        public Task Stop()
         {
-            await gRPCChannel.ShutdownAsync();
+            gRPCChannel.Dispose();
+            return Task.CompletedTask;
         }
         public async Task<GetInfoResponse> GetInfo()
         {
@@ -80,19 +89,20 @@ namespace LNDroneController.LND
             var splitConnection = connectionString.Split('@');
             addr.Host = splitConnection[1];
             addr.Pubkey = splitConnection[0];
-            return await LightningClient.ConnectPeerAsync(new ConnectPeerRequest{Addr =  addr, Perm = perm}); 
+            return await LightningClient.ConnectPeerAsync(new ConnectPeerRequest { Addr = addr, Perm = perm });
         }
 
         public async Task<ChannelPoint> OpenChannel(string publicKey, long localFundingAmount, long pushSat = 0, ulong satPerVbyte = 1)
         {
-              var response = await LightningClient.OpenChannelSyncAsync(new OpenChannelRequest{
-                  LocalFundingAmount = localFundingAmount,
-                  NodePubkey = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(publicKey)),
-                  SatPerVbyte = satPerVbyte,
-                  SpendUnconfirmed = true,
-                  PushSat = pushSat,
-              });
-              return response;
+            var response = await LightningClient.OpenChannelSyncAsync(new OpenChannelRequest
+            {
+                LocalFundingAmount = localFundingAmount,
+                NodePubkey = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(publicKey)),
+                SatPerVbyte = satPerVbyte,
+                SpendUnconfirmed = true,
+                PushSat = pushSat,
+            });
+            return response;
         }
         public async Task<List<Lnrpc.Channel>> GetChannels()
         {
@@ -105,16 +115,17 @@ namespace LNDroneController.LND
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
             var sha256 = SHA256.Create();
-            var hash = sha256.ComputeHash(randomBytes); 
-            var payment = new SendPaymentRequest{
+            var hash = sha256.ComputeHash(randomBytes);
+            var payment = new SendPaymentRequest
+            {
                 Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
                 Amt = 10,
                 FeeLimitSat = 10,
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
-                TimeoutSeconds= 60,
+                TimeoutSeconds = 60,
             };
-            payment.DestCustomRecords.Add(5482373484,Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
-            payment.DestCustomRecords.Add(34349334,Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message))); //message type
+            payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
+            payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message))); //message type
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
             await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
