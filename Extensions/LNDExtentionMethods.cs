@@ -1,0 +1,41 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using LNDroneController.LND;
+
+namespace LNDroneController.Extensions
+{
+    public static class LNDExtension
+    {
+        private static Random r = new Random();
+        public static async Task<List<LNDNodeConnection>> GetNewRandomNodes(this List<LNDNodeConnection> nodes, LNDNodeConnection baseNode, int count, int maxCycleCount = 1000)
+        {
+            var response = new List<LNDNodeConnection>();
+            var randomMax = nodes.Count - 1;
+            for (int i = 0; i < count; i++)
+            {
+                var existingChannels = await baseNode.GetChannels();
+                var found = false;
+                var cycleCount = 0;
+                while (!found)
+                {
+                    cycleCount++;
+                    var nextRandomNode = nodes[r.Next(randomMax)];
+                    //find nodes not in existing list, not self, and not any existing channel
+                    if (!response.Contains(nextRandomNode) &&
+                        nextRandomNode != baseNode &&
+                        !existingChannels.Any(x => x.RemotePubkey == nextRandomNode.LocalNodePubKey))
+                    {
+                        found = true;
+                        response.Add(nextRandomNode);
+                    }
+                    if (cycleCount >= maxCycleCount)
+                        break;
+                }
+            }
+            return response;
+        }
+    }
+}
+

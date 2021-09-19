@@ -104,7 +104,7 @@ namespace LNDroneController.LND
             });
             return response;
         }
-        public async Task<List<Lnrpc.Channel>> GetChannels()
+        public async Task<List<Channel>> GetChannels()
         {
             var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest());
             return response.Channels.ToList();
@@ -134,6 +134,12 @@ namespace LNDroneController.LND
             }
             return paymentResponse;
         }
+        public async Task<ChannelGraph> DescribeGraph(bool includeUnannounced=false)
+        {
+            return await LightningClient.DescribeGraphAsync(new ChannelGraphRequest{IncludeUnannounced = includeUnannounced });
+        }
+
+        
         public async Task RunHTLCLoop(CancellationToken cancellationToken)
         {
             var info = await LightningClient.GetInfoAsync(new GetInfoRequest());  //Get node info
