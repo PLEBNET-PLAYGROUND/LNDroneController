@@ -99,39 +99,11 @@ namespace LNDroneController.LND
             var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest());
             return response.Channels.ToList();
         }
-        public async Task<SendResponse> SendMessage(string dest, string message)
+        public async Task<Payment> SendMessage(string dest, string message)
         {
-            //34349334 - message
-            //const keySendValueType = '5482373484';
-            //const createSecret = () => randomBytes(32).toString('hex');
-             var r = new Random();
+            var r = new Random();
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
-            var randomHexString = Convert.ToHexString(randomBytes);
-            var sha256 = SHA256.Create();
-            var hash = sha256.ComputeHash(randomBytes); 
-            var payment = new SendRequest{
-                Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
-                Amt = 10,
-                FeeLimit = new FeeLimit{Fixed = 10},
-                PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
-            };
-            payment.DestCustomRecords.Add(5482373484,Google.Protobuf.ByteString.CopyFrom(randomBytes));
-            payment.DestCustomRecords.Add(34349334,Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message)));
-            
-            var response = await LightningClient.SendPaymentSyncAsync(payment);
-            return response;
-        }
-
-        public async Task<Payment> SendMessageV2(string dest, string message)
-        {
-            //34349334 - message
-            //const keySendValueType = '5482373484';
-            //const createSecret = () => randomBytes(32).toString('hex');
-             var r = new Random();
-            var randomBytes = new byte[32];
-            r.NextBytes(randomBytes);
-            var randomHexString = Convert.ToHexString(randomBytes);
             var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash(randomBytes); 
             var payment = new SendPaymentRequest{
@@ -141,8 +113,8 @@ namespace LNDroneController.LND
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
                 TimeoutSeconds= 60,
             };
-            payment.DestCustomRecords.Add(5482373484,Google.Protobuf.ByteString.CopyFrom(randomBytes));
-            payment.DestCustomRecords.Add(34349334,Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message)));
+            payment.DestCustomRecords.Add(5482373484,Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
+            payment.DestCustomRecords.Add(34349334,Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message))); //message type
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
             await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
