@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
 using ServiceStack;
+using System.Security.Cryptography;
 
 namespace LNDroneController.LND
 {
@@ -16,6 +17,8 @@ namespace LNDroneController.LND
     {
         private Grpc.Core.Channel gRPCChannel;
         private Lightning.LightningClient LightningClient;
+        private Router.RouterClient RouterClient;
+
         public string LocalNodePubKey { get; private set; }
         public string LocalAlias { get; private set; }
         public string ClearnetConnectString { get; private set; }
@@ -50,6 +53,7 @@ namespace LNDroneController.LND
             gRPCChannel = new Grpc.Core.Channel(host, combinedCreds);
 
             LightningClient = new Lnrpc.Lightning.LightningClient(gRPCChannel);
+            RouterClient = new Routerrpc.Router.RouterClient(gRPCChannel);
             var nodeInfo = LightningClient.GetInfo(new GetInfoRequest());
             LocalNodePubKey = nodeInfo.IdentityPubkey;
             LocalAlias = nodeInfo.Alias;
@@ -95,7 +99,58 @@ namespace LNDroneController.LND
             var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest());
             return response.Channels.ToList();
         }
+        public async Task<SendResponse> SendMessage(string dest, string message)
+        {
+            //34349334 - message
+            //const keySendValueType = '5482373484';
+            //const createSecret = () => randomBytes(32).toString('hex');
+             var r = new Random();
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var randomHexString = Convert.ToHexString(randomBytes);
+            var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(randomBytes); 
+            var payment = new SendRequest{
+                Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
+                Amt = 10,
+                FeeLimit = new FeeLimit{Fixed = 10},
+                PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
+            };
+            payment.DestCustomRecords.Add(5482373484,Google.Protobuf.ByteString.CopyFrom(randomBytes));
+            payment.DestCustomRecords.Add(34349334,Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message)));
+            
+            var response = await LightningClient.SendPaymentSyncAsync(payment);
+            return response;
+        }
 
+        public async Task<Payment> SendMessageV2(string dest, string message)
+        {
+            //34349334 - message
+            //const keySendValueType = '5482373484';
+            //const createSecret = () => randomBytes(32).toString('hex');
+             var r = new Random();
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var randomHexString = Convert.ToHexString(randomBytes);
+            var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(randomBytes); 
+            var payment = new SendPaymentRequest{
+                Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
+                Amt = 10,
+                FeeLimitSat = 10,
+                PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
+                TimeoutSeconds= 60,
+            };
+            payment.DestCustomRecords.Add(5482373484,Google.Protobuf.ByteString.CopyFrom(randomBytes));
+            payment.DestCustomRecords.Add(34349334,Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message)));
+            var streamingCallResponse = RouterClient.SendPaymentV2(payment);
+            Payment paymentResponse = null;
+            await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
+            {
+                paymentResponse = res;
+            }
+            return paymentResponse;
+        }
         public async Task RunHTLCLoop(CancellationToken cancellationToken)
         {
             var info = await LightningClient.GetInfoAsync(new GetInfoRequest());  //Get node info

@@ -37,34 +37,48 @@ namespace LNDroneController
                 nodeConnections.Add(nodeConnection);
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
+            //03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083 -Ngu
+            //023867414ef577da1ffd10364945f5023c4633c4a7a7f60b72898867df5ee02dda - tester
+                try 
+                {
+                    var response = await nodeConnections[0].SendMessageV2("023867414ef577da1ffd10364945f5023c4633c4a7a7f60b72898867df5ee02dda", "Hello World!");
+                    response.PrintDump();
+                    response = await nodeConnections[0].SendMessageV2("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083", "Hello World!");
+                    response.PrintDump();
+                }
+                catch(Exception e)
+                {
+                    e.PrintDump();
+                }
             foreach (var baseNode in nodeConnections)
             {
-                var nodes = await GetNewRandomNodes(nodeConnections, baseNode, 1);
-                Console.WriteLine($"Node: {baseNode.LocalAlias} : {baseNode.ClearnetConnectString}");
+                
+                // var nodes = await GetNewRandomNodes(nodeConnections, baseNode, 1);
+                // Console.WriteLine($"Node: {baseNode.LocalAlias} : {baseNode.ClearnetConnectString}");
 
-                foreach (var connectToNode in nodes)
-                {
-                    try
-                    {
-                        Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                        var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
-                        result.PrintDump();
-                    }
-                    catch (Grpc.Core.RpcException e)
-                    {
-                        e.Status.Detail.PrintDump();
-                    }
-                    // try
-                    // {
-                    //     Console.WriteLine($"Opening: {connectToNode.LocalAlias}  10MSat");
-                    //     var result2 = await baseNode.OpenChannel(connectToNode.LocalNodePubKey,10000000L);
-                    //     result2.PrintDump();
-                    // }
-                    // catch (Grpc.Core.RpcException e)
-                    // {
-                    //     e.Status.Detail.PrintDump();
-                    // }
-                }
+                // foreach (var connectToNode in nodes)
+                // {
+                //     try
+                //     {
+                //         Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
+                //         var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
+                //         result.PrintDump();
+                //     }
+                //     catch (Grpc.Core.RpcException e)
+                //     {
+                //         e.Status.Detail.PrintDump();
+                //     }
+                //     // try
+                //     // {
+                //     //     Console.WriteLine($"Opening: {connectToNode.LocalAlias}  10MSat");
+                //     //     var result2 = await baseNode.OpenChannel(connectToNode.LocalNodePubKey,10000000L);
+                //     //     result2.PrintDump();
+                //     // }
+                //     // catch (Grpc.Core.RpcException e)
+                //     // {
+                //     //     e.Status.Detail.PrintDump();
+                //     // }
+                // }
             }
 
             Console.WriteLine("Press ANY key to stop process");
