@@ -17,6 +17,7 @@ namespace LNDroneController.LND
 {
     public class LNDNodeConnection
     {
+        private static Random r = new Random();
         private GrpcChannel gRPCChannel;
         private Lightning.LightningClient LightningClient;
         private Router.RouterClient RouterClient;
@@ -109,9 +110,57 @@ namespace LNDroneController.LND
             var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest());
             return response.Channels.ToList();
         }
-        public async Task<Payment> SendMessage(string dest, string message)
+        public async Task<Payment> ProbeKeysendPayment(string dest, long amount = 10, long maxFee = 10, int timeoutSeconds = 60)
         {
-            var r = new Random();
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash("not-gonna-match".ToUtf8Bytes());
+            var payment = new SendPaymentRequest
+            {
+                Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
+                Amt = amount,
+                FeeLimitSat = maxFee,
+                PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
+                TimeoutSeconds = timeoutSeconds,
+                AllowSelfPayment = true, 
+            };
+            payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend 
+            var streamingCallResponse = RouterClient.SendPaymentV2(payment);
+            Payment paymentResponse = null;
+            await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
+            {
+                paymentResponse = res;
+            }
+            return paymentResponse;
+        }
+
+        public async Task<Payment> ProbePayment(string dest, long amount = 10, long maxFee = 10, int timeoutSeconds = 60)
+        {
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash("not-gonna-match".ToUtf8Bytes());
+            var payment = new SendPaymentRequest
+            {
+                Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
+                Amt = amount,
+                FeeLimitSat = maxFee,
+                PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
+                TimeoutSeconds = timeoutSeconds,
+                AllowSelfPayment = true,
+            };
+            var streamingCallResponse = RouterClient.SendPaymentV2(payment);
+            Payment paymentResponse = null;
+            await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
+            {
+                paymentResponse = res;
+            }
+            return paymentResponse;
+        }
+
+        public async Task<Payment> SendPayment(string dest, string message = null)
+        {
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
             var sha256 = SHA256.Create();

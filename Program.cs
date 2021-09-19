@@ -4,17 +4,13 @@ using System.Configuration;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Grpc.Core;
-using Lnrpc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Routerrpc;
 using ServiceStack;
 using ServiceStack.Text;
 using LNDroneController.LND;
 using System.Threading;
 using System.Linq;
 using LNDroneController.Types;
+using LNDroneController.Extensions;
 namespace LNDroneController
 {
     class Program
@@ -37,102 +33,97 @@ namespace LNDroneController
                 nodeConnections.Add(nodeConnection);
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
+            var graph = await nodeConnections[0].DescribeGraph();
+            foreach (var n in graph.Nodes)
+            {
+                try
+                {
+                    var response = await nodeConnections[0].ProbePayment(n.PubKey,7000000);
+                    var result = response.FailureReason.ToString() == "FailureReasonIncorrectPaymentDetails" ? "Online" : response.FailureReason.ToString();
+                    $"Node: {n.Alias} - {result}".Print();
+                }
+                catch (Exception e)
+                {
+                    e.PrintDump();
+                }
+            }
+
+
             //03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083 -Ngu
             //023867414ef577da1ffd10364945f5023c4633c4a7a7f60b72898867df5ee02dda - tester
             // try 
             // {
-            //     var response = await nodeConnections[0].SendMessageV2("023867414ef577da1ffd10364945f5023c4633c4a7a7f60b72898867df5ee02dda", "Hello World!");
+            //     var response = await nodeConnections[0].SendPayment("023867414ef577da1ffd10364945f5023c4633c4a7a7f60b72898867df5ee02dda", "Hello World!");
             //     response.PrintDump();
-            //     response = await nodeConnections[0].SendMessageV2("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083", "Hello World!");
+            //     response = await nodeConnections[0].SendPayment("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083", "Hello World!");
             //     response.PrintDump();
             // }
             // catch(Exception e)
             // {
             //     e.PrintDump();
             // }
-            foreach (var baseNode in nodeConnections)
-            {
+            //graph.Nodes.Count.Print();
+            // foreach (var baseNode in nodeConnections)
+            // {
 
-                var nodes = await GetNewRandomNodes(nodeConnections, baseNode, 15);
-                Console.WriteLine($"Node: {baseNode.LocalAlias}");
-                foreach (var connectToNode in nodes)
-                {
-                    try
-                    {
-                        Console.WriteLine($"KeySending: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                        var result = await baseNode.SendMessage(connectToNode.LocalNodePubKey, "Hello World!");
-                        int i = 0;
-                        foreach (var h in result.Htlcs)
-                        {
-                            i++;
-                            $"HTLC Attempt #{i} : Hops {h.Route.Hops.Count} Status:{h.Status}".Print();
-                        }
-                    }
-                    catch (Grpc.Core.RpcException e)
-                    {
-                        e.Status.Detail.PrintDump();
-                    }
-                  
-                }
-                // foreach (var connectToNode in nodes)
-                // {
-                //     try
-                //     {
-                //         Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                //         var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
-                //         result.PrintDump();
-                //     }
-                //     catch (Grpc.Core.RpcException e)
-                //     {
-                //         e.Status.Detail.PrintDump();
-                //     }
-                //     // try
-                //     // {
-                //     //     Console.WriteLine($"Opening: {connectToNode.LocalAlias}  10MSat");
-                //     //     var result2 = await baseNode.OpenChannel(connectToNode.LocalNodePubKey,10000000L);
-                //     //     result2.PrintDump();
-                //     // }
-                //     // catch (Grpc.Core.RpcException e)
-                //     // {
-                //     //     e.Status.Detail.PrintDump();
-                //     // }
-                // }
-            }
+            //     var nodes = await nodeConnections.GetNewRandomNodes( baseNode, 15);
+
+            //     Console.WriteLine($"Node: {baseNode.LocalAlias}");
+            //     var t = new List<Task>();
+            //     foreach (var connectToNode in nodes)
+            //     {
+            //          t.Add(KeySendWithMessage(baseNode, connectToNode));
+            //     }
+            //     Task.WaitAll(t.ToArray());
+            //     // foreach (var connectToNode in nodes)
+            //     // {
+            //     //     try
+            //     //     {
+            //     //         Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
+            //     //         var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
+            //     //         result.PrintDump();
+            //     //     }
+            //     //     catch (Grpc.Core.RpcException e)
+            //     //     {
+            //     //         e.Status.Detail.PrintDump();
+            //     //     }
+            //     //     // try
+            //     //     // {
+            //     //     //     Console.WriteLine($"Opening: {connectToNode.LocalAlias}  10MSat");
+            //     //     //     var result2 = await baseNode.OpenChannel(connectToNode.LocalNodePubKey,10000000L);
+            //     //     //     result2.PrintDump();
+            //     //     // }
+            //     //     // catch (Grpc.Core.RpcException e)
+            //     //     // {
+            //     //     //     e.Status.Detail.PrintDump();
+            //     //     // }
+            //     // }
+            // }
 
             Console.WriteLine("Press ANY key to stop process");
             Console.ReadKey();
 
         }
 
-        static async Task<List<LNDNodeConnection>> GetNewRandomNodes(List<LNDNodeConnection> nodes, LNDNodeConnection baseNode, int count)
+        private static async Task KeySendWithMessage(LNDNodeConnection baseNode, LNDNodeConnection connectToNode)
         {
-            var response = new List<LNDNodeConnection>();
-            var randomMax = nodes.Count - 1;
-            const int maxCycleCount = 1000;
-            for (int i = 0; i < count; i++)
+            try
             {
-                var existingChannels = await baseNode.GetChannels();
-
-                var found = false;
-                var cycleCount = 0;
-                while (!found)
+                Console.WriteLine($"KeySending: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
+                var result = await baseNode.SendPayment(connectToNode.LocalNodePubKey, "Hello World!");
+                int i = 0;
+                foreach (var h in result.Htlcs)
                 {
-                    cycleCount++;
-                    var nextRandomNode = nodes[r.Next(randomMax)];
-                    //not in existing list, not self, and not any existing channel
-                    if (!response.Contains(nextRandomNode) &&
-                        nextRandomNode != baseNode &&
-                        !existingChannels.Any(x => x.RemotePubkey == nextRandomNode.LocalNodePubKey))
-                    {
-                        found = true;
-                        response.Add(nextRandomNode);
-                    }
-                    if (cycleCount > maxCycleCount)
-                        break;
+                    i++;
+                    $"HTLC Attempt #{i} : Hops {h.Route.Hops.Count} Status:{h.Status}".Print();
                 }
             }
-            return response;
+            catch (Grpc.Core.RpcException e)
+            {
+                e.Status.Detail.PrintDump();
+            }
         }
+
 
     }
 
