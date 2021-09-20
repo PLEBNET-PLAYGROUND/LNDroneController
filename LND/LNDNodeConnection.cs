@@ -13,6 +13,8 @@ using System.Security.Cryptography;
 using Grpc.Net.Client;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
+
 namespace LNDroneController.LND
 {
     public class LNDNodeConnection
@@ -123,7 +125,7 @@ namespace LNDroneController.LND
                 FeeLimitSat = maxFee,
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
                 TimeoutSeconds = timeoutSeconds,
-                AllowSelfPayment = true, 
+                AllowSelfPayment = true,
             };
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend 
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
@@ -134,7 +136,81 @@ namespace LNDroneController.LND
             }
             return paymentResponse;
         }
+        public async Task<Route> ProbePaymentGirth(string dest, long maxAmount = 100000, long maxFee = 10, int timeoutSecond = 60)
+        {
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash("not-gonna-match".ToUtf8Bytes());
+            var findRoute = await ProbePayment(dest, 10, maxFee, timeoutSecond);
+           if (findRoute.FailureReason == PaymentFailureReason.FailureReasonNoRoute)
+           {
+               Debug.Print($"No route for: {await GetNodeAliasFromPubKey(dest)}");
+               return null;
+           }
+            Route nextRoute = findRoute.Htlcs.Last().Route;
+            Route bestRoute = findRoute.Htlcs.Last().Route;
+            if (findRoute.FailureReason.ToString() == "FailureReasonIncorrectPaymentDetails")
+            {   //It's a good path
+                long nextCurrent = maxAmount;
+                int count = 0;
+                Debug.Print($"Next Target:{nextCurrent}");
+                while (true)
+                {
+                    count++;
+                    try
+                    {
+                        var newRoute = new BuildRouteRequest
+                        {
+                            AmtMsat = nextCurrent * 1000L,
+                            FinalCltvDelta = 40
+                        };
+                        foreach (Hop r in nextRoute.Hops)
+                        {
+                            newRoute.HopPubkeys.Add(Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(r.PubKey)));
+                        }
+                        var constructedRoute = await RouterClient.BuildRouteAsync(newRoute);
+                        var nextAttempt = await RouterClient.SendToRouteV2Async(
+                            new Routerrpc.SendToRouteRequest
+                            {
+                                Route = constructedRoute.Route,
+                                PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
+                            }, deadline: DateTime.UtcNow.AddMinutes(1));
+                        nextRoute = nextAttempt.Route;
+                        switch (nextAttempt.Failure.Code)
+                        {
+                            case Failure.Types.FailureCode.IncorrectOrUnknownPaymentDetails:
+                                return nextAttempt.Route;
+                            case Failure.Types.FailureCode.TemporaryChannelFailure:
+                                return bestRoute;
+                            default:
+                                //less?
+                                nextCurrent = (long)(nextCurrent * 0.66);
+                                break;
+                        }
+                        if (count == 15)
+                        {
+                            return bestRoute;
+                        }
 
+                    }
+                    catch (RpcException e)
+                    {
+                        if (e.Status.Detail.Contains("no matching outgoing channel available"))
+                        {
+                            //less?
+                            nextCurrent = (long)(nextCurrent * 0.75);
+                        }
+                        else
+                        {
+                            e.PrintDump();
+                        }
+                    }
+                    Debug.Print($"Next Target:{nextCurrent}");
+                }
+            }
+            return bestRoute;
+        }
         public async Task<Payment> ProbePayment(string dest, long amount = 10, long maxFee = 10, int timeoutSeconds = 60)
         {
             var randomBytes = new byte[32];
@@ -149,6 +225,7 @@ namespace LNDroneController.LND
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
                 TimeoutSeconds = timeoutSeconds,
                 AllowSelfPayment = true,
+
             };
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
@@ -174,7 +251,7 @@ namespace LNDroneController.LND
                 TimeoutSeconds = 60,
             };
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
-            payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.UTF8.GetBytes(message))); //message type
+            payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.Default.GetBytes(message))); //message type
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
             await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
@@ -183,12 +260,11 @@ namespace LNDroneController.LND
             }
             return paymentResponse;
         }
-        public async Task<ChannelGraph> DescribeGraph(bool includeUnannounced=false)
+        public async Task<ChannelGraph> DescribeGraph(bool includeUnannounced = false)
         {
-            return await LightningClient.DescribeGraphAsync(new ChannelGraphRequest{IncludeUnannounced = includeUnannounced });
+            return await LightningClient.DescribeGraphAsync(new ChannelGraphRequest { IncludeUnannounced = includeUnannounced });
         }
 
-        
         public async Task RunHTLCLoop(CancellationToken cancellationToken)
         {
             var info = await LightningClient.GetInfoAsync(new GetInfoRequest());  //Get node info
@@ -209,7 +285,11 @@ namespace LNDroneController.LND
 
             await htlcEventTask;
         }
-
+        public async Task<string> GetNodeAliasFromPubKey(string pubkey)
+        {
+            var node = await LightningClient.GetNodeInfoAsync(new NodeInfoRequest { PubKey = pubkey });
+            return node.Node.Alias;
+        }
         private async Task<string> GetFriendlyNodeNameFromChannel(ulong channelId)
         {
             if (channelId == 0)
