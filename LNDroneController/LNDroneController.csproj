@@ -29,12 +29,7 @@
  
   
   <ItemGroup>
-      <!--  Getting Errors with these, need to look why, not important right now    -->
- <!-- 
     <Protobuf Include="Grpc\verrpc\verrpc.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="Grpc\lcclipb\lncli.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    -->
-    
     <Protobuf Include="Grpc\autopilotrpc\autopilot.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
     <Protobuf Include="Grpc\chainrpc\chainnotifier.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
     <Protobuf Include="Grpc\invoicesrpc\invoices.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
