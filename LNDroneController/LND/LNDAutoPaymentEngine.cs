@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using System.Threading;
-using LNDroneController.Extensions;
 
 namespace LNDroneController.LND
 {

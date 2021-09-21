@@ -10,16 +10,14 @@ using LNDroneController.LND;
 using System.Threading;
 using System.Linq;
 using LNDroneController.Types;
-using LNDroneController.Extensions;
 namespace LNDroneController
 {
     class Program
     {
         private static Random r = new Random();
-        async static Task Main(string[] args)
+        static void Main(string[] args)
         {
             var nodeConnections = new List<LNDNodeConnection>();
-            args = new string[3];
             for (int i = 0; i < 25; i++)
             {
                 var node = new NodeConnectionSetings
@@ -39,7 +37,7 @@ namespace LNDroneController
 
         }
 
-       
+
 
 
     }

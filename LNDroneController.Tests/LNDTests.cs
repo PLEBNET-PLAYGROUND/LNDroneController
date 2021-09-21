@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
+using Grpc.Core;
 using NUnit.Framework;
 using LNDroneController;
 using LNDroneController.Types;
 using LNDroneController.LND;
-using LNDroneController.Extensions;
 using ServiceStack;
 using ServiceStack.Text;
 using Lnrpc;
@@ -41,6 +42,78 @@ namespace LNDroneController.Tests
             }
         }
 
+        [Test]
+        public async Task TryReconnect()
+        {
+            await NodeConnections[0].TryReconnect();
+        }
+
+        [Test]
+        public async Task CrossConnectCluster()
+        {
+            
+                foreach (var baseNode in NodeConnections)
+                {
+                    foreach (var node in NodeConnections)
+                    {
+                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
+                        {
+                            try
+                            {
+                                var result = await baseNode.Connect(node.ClearnetConnectString);
+                                result.PrintDump();
+                            }
+                            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                            {
+                                e.PrintDump();
+                            }
+                        }
+                    }
+                }
+            
+        }
+        
+        [Test]
+        public void CrossPayCluster()
+        {
+            var tasks = new List<Task<Payment>>(); 
+                foreach (var baseNode in NodeConnections.GetRandomFromList(5,100))
+                {
+                    foreach (var node in NodeConnections)
+                    {
+                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
+                        {
+                             tasks.Add(baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
+                        }
+                    }
+                }
+
+                Task.WaitAll(tasks.ToArray());
+                var good = tasks.Where(x => x.Result.Status == Payment.Types.PaymentStatus.Succeeded).Count();
+                var bad = tasks.Where(x => x.Result.Status == Payment.Types.PaymentStatus.Failed).Count();
+                $"Success: {good} Fail: {bad} % success: {(1.0*good/(bad+good))}".Print();
+                
+        }
+
+        [Test]
+        public async Task ListActiveChannels()
+        {
+            var channels = await NodeConnections[0].ListActiveChannels();
+            channels.PrintDump();
+        }
+        [Test]
+        public async Task ListInactiveChannels()
+        {
+            var channels = await NodeConnections[0].ListInactiveChannels();
+            channels.PrintDump();
+        }
+        [Test]
+        public async Task ListAllChannels()
+        {
+            var channels = await NodeConnections[0].ListChannels(new ListChannelsRequest());
+            channels.PrintDump();
+        }
+        
         [Test]
         public async Task ConnectRandomNodes()
         {
@@ -106,6 +179,20 @@ namespace LNDroneController.Tests
         }
 
         [Test]
+        public async Task QueryRoutes()
+        {
+            var response = await NodeConnections[0].QueryRoutes("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083", keySend:true);
+            response.PrintDump();
+        }
+
+        [Test]
+        public async Task ManualRoutePayment()
+        {
+            var routes = await NodeConnections[0].QueryRoutes("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083",keySend:true);
+            var paymentRes = await NodeConnections[0].SendPaymentViaRoute(routes[0]);
+            paymentRes.PrintDump();
+        }
+        [Test]
         public async Task ProbePayment()
         {
             var response = await NodeConnections[0].ProbePayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10);
@@ -115,7 +202,7 @@ namespace LNDroneController.Tests
         [Test]
         public async Task SendPaymentWithMessage()
         {
-            var response = await NodeConnections[0].SendPayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10, 10, message: "Hello World!");
+            var response = await NodeConnections[0].KeysendPayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10, 10, message: "Hello World!");
             response.PrintDump();
         }
         [Test]
@@ -144,7 +231,7 @@ namespace LNDroneController.Tests
             try
             {
                 Console.WriteLine($"KeySending: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                var result = await baseNode.SendPayment(connectToNode.LocalNodePubKey, 10, 10, "Hello World!");
+                var result = await baseNode.KeysendPayment(connectToNode.LocalNodePubKey, 10, 10, "Hello World!");
                 int i = 0;
                 foreach (var h in result.Htlcs)
                 {
@@ -163,7 +250,7 @@ namespace LNDroneController.Tests
             try
             {
                 Console.WriteLine($"KeySending: {connectToNode.Alias} : {connectToNode.PubKey}");
-                var result = await baseNode.SendPayment(connectToNode.PubKey, 10, 10, "Hello World!");
+                var result = await baseNode.KeysendPayment(connectToNode.PubKey, 10, 10, "Hello World!");
                 int i = 0;
                 foreach (var h in result.Htlcs)
                 {

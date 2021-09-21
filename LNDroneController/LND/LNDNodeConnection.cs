@@ -14,6 +14,9 @@ using Grpc.Net.Client;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics;
+using System.Security.Policy;
+using Google.Protobuf;
+using Google.Protobuf.Collections;
 
 namespace LNDroneController.LND
 {
@@ -81,11 +84,74 @@ namespace LNDroneController.LND
             gRPCChannel.Dispose();
             return Task.CompletedTask;
         }
+        
         public async Task<GetInfoResponse> GetInfo()
         {
             return await LightningClient.GetInfoAsync(new GetInfoRequest());  //Get node info
         }
+        
+        /// <summary>
+        /// List all active channels
+        /// </summary>
+        public async Task<List<Channel>> ListActiveChannels()
+        {
+            var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest{ActiveOnly = true});
+            return response.Channels.ToList();
+        }
+        /// <summary>
+        /// List all inactive channels
+        /// </summary>
+        public async Task<List<Channel>> ListInactiveChannels()
+        {
+            var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest{InactiveOnly = true});
+            return response.Channels.ToList();
+        }
 
+        public async Task TryReconnect()
+        {
+            var inactive = await ListInactiveChannels();
+            foreach (var chan in inactive)
+            {
+                var nodeInfo = await GetNodeInfo(chan.RemotePubkey);
+                foreach (var addr in nodeInfo.Node.Addresses)
+                {
+                    try
+                    {
+                        var response = await LightningClient.ConnectPeerAsync(new ConnectPeerRequest
+                        {
+                            Addr = new LightningAddress
+                            {
+                                Host = addr.Addr,
+                                Pubkey = nodeInfo.Node.PubKey,
+                            },
+                            Timeout = 10L,
+                        });
+                    }
+                    catch (RpcException e) when (e.StatusCode == StatusCode.Unknown) {}
+                    
+                }
+            }
+
+            return;
+        }
+
+        private async Task<NodeInfo> GetNodeInfo(string pubkey, bool includeChannels = false)
+        {
+            return await LightningClient.GetNodeInfoAsync(new NodeInfoRequest
+            {
+                PubKey = pubkey,
+                IncludeChannels = includeChannels
+            });
+        }
+
+        /// <summary>
+        /// List all channels fitting require query
+        /// </summary>
+        public async Task<List<Channel>> ListChannels(ListChannelsRequest req)
+        {
+            var response = await LightningClient.ListChannelsAsync(req);
+            return response.Channels.ToList();
+        }
         public async Task<ConnectPeerResponse> Connect(string connectionString, bool perm = false)
         {
             var addr = new LightningAddress();
@@ -211,6 +277,23 @@ namespace LNDroneController.LND
             }
             return bestRoute;
         }
+        public async Task<List<Route>> QueryRoutes(string dest, long amount = 10, long maxFee = 10, int timeoutSecond = 60, bool keySend = false)
+        {
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var req = new QueryRoutesRequest
+            {
+                Amt = amount,
+                PubKey = dest,
+                FeeLimit = new FeeLimit { Fixed = maxFee },
+            };
+            if (keySend)
+            {
+                req.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
+            }
+            var queryRoutesResponse = await LightningClient.QueryRoutesAsync(req);
+            return queryRoutesResponse.Routes.ToList();
+        }
         public async Task<Payment> ProbePayment(string dest, long amount = 10, long maxFee = 10, int timeoutSeconds = 60)
         {
             var randomBytes = new byte[32];
@@ -235,8 +318,31 @@ namespace LNDroneController.LND
             }
             return paymentResponse;
         }
+        public async Task<HTLCAttempt> SendPaymentViaRoute(Route route, Google.Protobuf.ByteString paymentHash = null)
+        {
+            var sha256 = SHA256.Create();
 
-        public async Task<Payment> SendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null)
+            if (paymentHash == null)
+            {
+                if (route.Hops.Last().CustomRecords.ContainsKey(5482373484L)) //Is Keysend
+                {
+                    var paymentId = route.Hops.Last().CustomRecords[5482373484L];
+                    paymentHash = Google.Protobuf.ByteString.CopyFrom(sha256.ComputeHash(paymentId.ToByteArray()));
+                }
+                else
+                {
+                    var hash = sha256.ComputeHash("not-gonna-match".ToUtf8Bytes());
+                    paymentHash = Google.Protobuf.ByteString.CopyFrom(hash);
+                }
+            }
+            return await RouterClient.SendToRouteV2Async(
+                new Routerrpc.SendToRouteRequest
+                {
+                    Route = route,
+                    PaymentHash = paymentHash
+                }, deadline: DateTime.UtcNow.AddMinutes(1));
+        }
+        public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60)
         {
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
@@ -248,10 +354,11 @@ namespace LNDroneController.LND
                 Amt = amtSat,
                 FeeLimitSat = feeLimitSat,
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
-                TimeoutSeconds = 60,
+                TimeoutSeconds = timeoutSeconds,
             };
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
-            payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.Default.GetBytes(message))); //message type
+            if (message != null) 
+                payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.Default.GetBytes(message))); //message type
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
             await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
