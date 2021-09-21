@@ -143,11 +143,11 @@ namespace LNDroneController.LND
             var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash("not-gonna-match".ToUtf8Bytes());
             var findRoute = await ProbePayment(dest, 10, maxFee, timeoutSecond);
-           if (findRoute.FailureReason == PaymentFailureReason.FailureReasonNoRoute)
-           {
-               Debug.Print($"No route for: {await GetNodeAliasFromPubKey(dest)}");
-               return null;
-           }
+            if (findRoute.FailureReason == PaymentFailureReason.FailureReasonNoRoute)
+            {
+                Debug.Print($"No route for: {await GetNodeAliasFromPubKey(dest)}");
+                return null;
+            }
             Route nextRoute = findRoute.Htlcs.Last().Route;
             Route bestRoute = findRoute.Htlcs.Last().Route;
             if (findRoute.FailureReason.ToString() == "FailureReasonIncorrectPaymentDetails")
@@ -236,7 +236,7 @@ namespace LNDroneController.LND
             return paymentResponse;
         }
 
-        public async Task<Payment> SendPayment(string dest, string message = null)
+        public async Task<Payment> SendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null)
         {
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
@@ -245,8 +245,8 @@ namespace LNDroneController.LND
             var payment = new SendPaymentRequest
             {
                 Dest = Google.Protobuf.ByteString.CopyFrom(Convert.FromHexString(dest)),
-                Amt = 10,
-                FeeLimitSat = 10,
+                Amt = amtSat,
+                FeeLimitSat = feeLimitSat,
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
                 TimeoutSeconds = 60,
             };
