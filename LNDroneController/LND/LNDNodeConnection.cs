@@ -60,7 +60,7 @@ namespace LNDroneController.LND
                 "https://" + host,
                 new GrpcChannelOptions
                 {
-                    DisposeHttpClient = true,
+                    DisposeHttpClient = true, 
                     HttpHandler = httpClientHandler,
                     Credentials = ChannelCredentials.Create(new SslCredentials(), credentials),
                     MaxReceiveMessageSize = 128000000
@@ -78,7 +78,8 @@ namespace LNDroneController.LND
                 ClearnetConnectString = $"{nodeInfo.IdentityPubkey}@{localIP}:9735";
             }
         }
-
+ 
+         
         public Task Stop()
         {
             gRPCChannel.Dispose();
@@ -160,7 +161,10 @@ namespace LNDroneController.LND
             addr.Pubkey = splitConnection[0];
             return await LightningClient.ConnectPeerAsync(new ConnectPeerRequest { Addr = addr, Perm = perm });
         }
-
+        public async Task<DisconnectPeerResponse> Disconnect(string pubkey)
+        {
+            return await LightningClient.DisconnectPeerAsync(new DisconnectPeerRequest{PubKey = pubkey});
+        }
         public async Task<ChannelPoint> OpenChannel(string publicKey, long localFundingAmount, long pushSat = 0, ulong satPerVbyte = 1)
         {
             var response = await LightningClient.OpenChannelSyncAsync(new OpenChannelRequest
@@ -410,5 +414,7 @@ namespace LNDroneController.LND
         {
             return edge.Node1Pub == LocalNodePubKey ? edge.Node2Pub : edge.Node1Pub;
         }
+
+        
     }
 }

@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Dasync.Collections;
 using Grpc.Core;
 using NUnit.Framework;
 using LNDroneController;
@@ -60,6 +62,17 @@ namespace LNDroneController.Tests
                         {
                             try
                             {
+                                //disconnect & reconnect
+                                var disconnect = await baseNode.Disconnect(node.LocalNodePubKey);
+                            }
+                            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                            {
+                                e.PrintDump();
+                            }
+
+                            try
+                            {
+                                //disconnect & reconnect
                                 var result = await baseNode.Connect(node.ClearnetConnectString);
                                 result.PrintDump();
                             }
@@ -70,28 +83,28 @@ namespace LNDroneController.Tests
                         }
                     }
                 }
-            
         }
         
         [Test]
-        public void CrossPayCluster()
+        public async Task CrossPayCluster()
         {
-            var tasks = new List<Task<Payment>>(); 
-                foreach (var baseNode in NodeConnections.GetRandomFromList(5,100))
+            var nodes = await NodeConnections[0].DescribeGraph();
+            //var tasks = new List<Task<Payment>>(); 
+            var bag = new ConcurrentBag<Payment>();
+                foreach (var baseNode in NodeConnections)
                 {
-                    foreach (var node in NodeConnections)
+                    await NodeConnections.ParallelForEachAsync(async node =>
                     {
                         if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
                         {
-                             tasks.Add(baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
+                            bag.Add(await baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
                         }
-                    }
+                    }, maxDegreeOfParallelism:20);
                 }
-
-                Task.WaitAll(tasks.ToArray());
-                var good = tasks.Where(x => x.Result.Status == Payment.Types.PaymentStatus.Succeeded).Count();
-                var bad = tasks.Where(x => x.Result.Status == Payment.Types.PaymentStatus.Failed).Count();
-                $"Success: {good} Fail: {bad} % success: {(1.0*good/(bad+good))}".Print();
+                
+                var good = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Succeeded).Count();
+                var bad = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Failed).Count();
+                $"Success: {good}/{bag.Count()} Fail: {bad}  {(1.0*good/bag.Count*100)}%".Print();
                 
         }
 
@@ -141,6 +154,19 @@ namespace LNDroneController.Tests
         }
 
 
+        [Test]
+        public async Task GetInfo()
+        {
+            var bag = new ConcurrentBag<GetInfoResponse>();
+            await NodeConnections.ParallelForEachAsync(async n =>
+            {
+                bag.Add(await n.GetInfo());
+            }, 20);
+            foreach (var x in bag)
+            {
+                x.Uris.PrintDump();
+            }
+        }
         [Test]
         [Ignore("Remove Ignore if you really want to do this")]
         public async Task OpenChannelsWithRandomNodes()

@@ -9,7 +9,7 @@ namespace LNDroneController.Tests
         public static List<T> GetRandomFromList<T>(this List<T> l, int count, int maxCycleCount = 1000)
         {
             var response = new List<T>();
-            if (l.Count >= count)
+            if (l.Count <= count)
             {
                 return l;
             }
