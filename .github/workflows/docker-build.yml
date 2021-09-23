@@ -37,5 +37,4 @@ jobs:
         name: Build LNDroneController
         if: always()
         run: |
-          echo "${{ secrets.CR_PAT }}" | docker login https://ghcr.io -u ${{ github.actor }} --password-stdin
-          docker buildx build --platform linux/amd64,linux/arm64 -t lndronecontroller . --push
+          docker buildx build --platform linux/amd64,linux/arm64 -t lndronecontroller . 
