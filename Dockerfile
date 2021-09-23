@@ -9,6 +9,10 @@ RUN dotnet publish -c Release -o out
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:5.0 as lndronecontroller
+LABEL org.opencontainers.image.source https://github.com/PLEBNET-PLAYGROUND/LNDroneController
+LABEL org.opencontainers.image.authors="Richard Safier"
+LABEL org.opencontainers.image.licenses=MIT
+
 WORKDIR /app
 COPY --from=build-env /app/out .
 ENTRYPOINT ["dotnet", "LNDroneController.dll"]

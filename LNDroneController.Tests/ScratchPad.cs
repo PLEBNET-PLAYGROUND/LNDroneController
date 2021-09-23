@@ -43,6 +43,7 @@ namespace LNDroneController.Tests
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
+      
         [Test]
         public async Task CrossConnectCluster()
         {

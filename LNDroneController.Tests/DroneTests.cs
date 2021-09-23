@@ -41,7 +41,42 @@ namespace LNDroneController.Tests
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
+        [Test]
+        public async Task ListPayments()
+        {
+            var result = await NodeConnections[0].ListPayments(new ListPaymentsRequest
+            {
+                IncludeIncomplete = false
+            });
+            result.Payments.Count.Print();
+            result.PrintDump();
+        }
+        [Test]
+        public async Task PurgePaymentsFailedHTLCs()
+        {
+            var result = await NodeConnections[0].PurgePayments(new DeleteAllPaymentsRequest{
+                FailedHtlcsOnly = true,
+            });
+            result.PrintDump();
 
+        }
+        [Test]
+        public async Task PurgeAllPayments()
+        {
+            var result = await NodeConnections[0].PurgePayments(new DeleteAllPaymentsRequest{
+            });
+            result.PrintDump();
+
+        }
+        [Test]
+        public async Task PurgeFailedPayments()
+        {
+            var result = await NodeConnections[0].PurgePayments(new DeleteAllPaymentsRequest{
+                FailedPaymentsOnly = true,
+            });
+            result.PrintDump();
+
+        }
         [Test]
         public async Task TryReconnect()
         {

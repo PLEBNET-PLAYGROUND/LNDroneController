@@ -322,6 +322,16 @@ namespace LNDroneController.LND
             }
             return paymentResponse;
         }
+
+        public async Task<DeleteAllPaymentsResponse> PurgePayments(DeleteAllPaymentsRequest request)
+        {
+            return await LightningClient.DeleteAllPaymentsAsync(request);
+        }
+
+        public async Task<ListPaymentsResponse> ListPayments(ListPaymentsRequest request)
+        {
+            return await LightningClient.ListPaymentsAsync(request);
+        }
         public async Task<HTLCAttempt> SendPaymentViaRoute(Route route, Google.Protobuf.ByteString paymentHash = null)
         {
             var sha256 = SHA256.Create();
