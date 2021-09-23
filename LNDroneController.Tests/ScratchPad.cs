@@ -15,7 +15,7 @@ using ServiceStack.Text;
 using Lnrpc;
 namespace LNDroneController.Tests
 {
-    public class Tests
+    public class ScratchPad
     {
         //03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083 - Ngu
         //023867414ef577da1ffd10364945f5023c4633c4a7a7f60b72898867df5ee02dda - testing tester
@@ -43,90 +43,62 @@ namespace LNDroneController.Tests
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
-
-        [Test]
-        public async Task TryReconnect()
-        {
-            await NodeConnections[0].TryReconnect();
-        }
-
         [Test]
         public async Task CrossConnectCluster()
         {
-            
-                foreach (var baseNode in NodeConnections)
-                {
-                    foreach (var node in NodeConnections)
-                    {
-                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
-                        {
-                            try
-                            {
-                                //disconnect & reconnect
-                                var disconnect = await baseNode.Disconnect(node.LocalNodePubKey);
-                            }
-                            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
-                            {
-                                e.PrintDump();
-                            }
 
-                            try
-                            {
-                                //disconnect & reconnect
-                                var result = await baseNode.Connect(node.ClearnetConnectString);
-                                result.PrintDump();
-                            }
-                            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
-                            {
-                                e.PrintDump();
-                            }
+            foreach (var baseNode in NodeConnections)
+            {
+                foreach (var node in NodeConnections)
+                {
+                    if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
+                    {
+                        try
+                        {
+                            //disconnect & reconnect
+                            var disconnect = await baseNode.Disconnect(node.LocalNodePubKey);
+                        }
+                        catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                        {
+                            e.PrintDump();
+                        }
+
+                        try
+                        {
+                            //disconnect & reconnect
+                            var result = await baseNode.Connect(node.ClearnetConnectString);
+                            result.PrintDump();
+                        }
+                        catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                        {
+                            e.PrintDump();
                         }
                     }
                 }
+            }
         }
-        
         [Test]
         public async Task CrossPayCluster()
         {
             var nodes = await NodeConnections[0].DescribeGraph();
             //var tasks = new List<Task<Payment>>(); 
             var bag = new ConcurrentBag<Payment>();
-                foreach (var baseNode in NodeConnections)
+            foreach (var baseNode in NodeConnections)
+            {
+                await NodeConnections.ParallelForEachAsync(async node =>
                 {
-                    await NodeConnections.ParallelForEachAsync(async node =>
+                    if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
                     {
-                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
-                        {
-                            bag.Add(await baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
-                        }
-                    }, maxDegreeOfParallelism:20);
-                }
-                
-                var good = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Succeeded).Count();
-                var bad = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Failed).Count();
-                $"Success: {good}/{bag.Count()} Fail: {bad}  {(1.0*good/bag.Count*100)}%".Print();
-                
-        }
+                        bag.Add(await baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
+                    }
+                }, maxDegreeOfParallelism: 20);
+            }
 
-        [Test]
-        public async Task ListActiveChannels()
-        {
-            var channels = await NodeConnections[0].ListActiveChannels();
-            channels.PrintDump();
+            var good = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Succeeded).Count();
+            var bad = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Failed).Count();
+            $"Success: {good}/{bag.Count()} Fail: {bad}  {(1.0 * good / bag.Count * 100)}%".Print();
+
         }
-        [Test]
-        public async Task ListInactiveChannels()
-        {
-            var channels = await NodeConnections[0].ListInactiveChannels();
-            channels.PrintDump();
-        }
-        [Test]
-        public async Task ListAllChannels()
-        {
-            var channels = await NodeConnections[0].ListChannels(new ListChannelsRequest());
-            channels.PrintDump();
-        }
-        
         [Test]
         public async Task ConnectRandomNodes()
         {
@@ -150,21 +122,6 @@ namespace LNDroneController.Tests
                         e.Status.Detail.PrintDump();
                     }
                 }
-            }
-        }
-
-
-        [Test]
-        public async Task GetInfo()
-        {
-            var bag = new ConcurrentBag<GetInfoResponse>();
-            await NodeConnections.ParallelForEachAsync(async n =>
-            {
-                bag.Add(await n.GetInfo());
-            }, 20);
-            foreach (var x in bag)
-            {
-                x.Uris.PrintDump();
             }
         }
         [Test]
@@ -203,21 +160,6 @@ namespace LNDroneController.Tests
                 }
             }
         }
-
-        [Test]
-        public async Task QueryRoutes()
-        {
-            var response = await NodeConnections[0].QueryRoutes("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083", keySend:true);
-            response.PrintDump();
-        }
-
-        [Test]
-        public async Task ManualRoutePayment()
-        {
-            var routes = await NodeConnections[0].QueryRoutes("03c14f0b2a07a7b3eb2701bf03fafe65bc76c7c1aac77f7d57a9e9bb31a9107083",keySend:true);
-            var paymentRes = await NodeConnections[0].SendPaymentViaRoute(routes[0]);
-            paymentRes.PrintDump();
-        }
         [Test]
         public async Task ProbePayment()
         {
@@ -231,27 +173,6 @@ namespace LNDroneController.Tests
             var response = await NodeConnections[0].KeysendPayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10, 10, message: "Hello World!");
             response.PrintDump();
         }
-        [Test]
-        public async Task DescribeGraph()
-        {
-            var graph = await NodeConnections[0].DescribeGraph();
-            graph.PrintDump();
-        }
-        [Test]
-        public async Task FindRandomNodes()
-        {
-            var graph = await NodeConnections[0].DescribeGraph();
-            var nodes = await graph.Nodes.GetNewRandomNodes(NodeConnections[0], 10, 100);
-            nodes.PrintDump();
-        }
-
-        [Test]
-        public void ConvertToLightningNodes()
-        {
-            var nodes = NodeConnections.ToLightningNodes();
-            nodes.PrintDump();
-        }
-
         private static async Task KeySendWithMessage(LNDNodeConnection baseNode, LNDNodeConnection connectToNode)
         {
             try
