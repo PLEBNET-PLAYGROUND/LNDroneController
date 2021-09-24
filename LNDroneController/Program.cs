@@ -17,24 +17,24 @@ namespace LNDroneController
         private static Random r = new Random();
         static void Main(string[] args)
         {
-            var nodeConnections = new List<LNDNodeConnection>();
-            for (int i = 0; i < 25; i++)
+            if (args.Length < 1)
             {
-                var node = new NodeConnectionSetings
-                {
-                    TlsCertFilePath = Environment.GetEnvironmentVariable("HOME") + $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/tls.cert".MapAbsolutePath(),
-                    MacaroonFilePath = Environment.GetEnvironmentVariable("HOME") + $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/data/chain/bitcoin/signet/admin.macaroon".MapAbsolutePath(),
-                    LocalIP = (Environment.GetEnvironmentVariable("HOME") + $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath()).ReadAllText().Replace("\n", string.Empty),
-                    Host = $"playground-lnd-{i}:10009",
-                };
+                Console.WriteLine("Syntax: LNDroneController <full path to drone config file>");
+                return;
+            }
+            var nodeConnections = new List<LNDNodeConnection>();
+            var config = File.ReadAllText(args[0],Encoding.UTF8).FromJson<List<NodeConnectionSetings>>();
+            foreach(var node in config)
+            {
                 var nodeConnection = new LNDNodeConnection();
                 nodeConnections.Add(nodeConnection);
-                nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
+                if (!node.LocalIPPath.IsNullOrEmpty())
+                    node.LocalIP = node.LocalIPPath.ReadAllText();
+                nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host,node.LocalIP);
             }
 
-            // Console.WriteLine("Press ANY key to stop process");
-            // Console.ReadKey();
-
+            Console.WriteLine("Press ANY key to stop process");
+            Console.ReadKey();
         }
 
 

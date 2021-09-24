@@ -368,5 +368,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-#deploy files
+#deploy & dev files
 deploy-docker.sh
+drone-config.json

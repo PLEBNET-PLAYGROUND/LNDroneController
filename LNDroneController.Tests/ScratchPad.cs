@@ -2,7 +2,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Grpc.Core;
@@ -13,6 +15,7 @@ using LNDroneController.LND;
 using ServiceStack;
 using ServiceStack.Text;
 using Lnrpc;
+using ServiceStack.Common;
 namespace LNDroneController.Tests
 {
     public class ScratchPad
@@ -33,6 +36,8 @@ namespace LNDroneController.Tests
                     MacaroonFilePath = Environment.GetEnvironmentVariable("HOME") +
                                        $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/data/chain/bitcoin/signet/admin.macaroon"
                                            .MapAbsolutePath(),
+                    LocalIPPath = (Environment.GetEnvironmentVariable("HOME") +
+                               $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath()),
                     LocalIP = (Environment.GetEnvironmentVariable("HOME") +
                                $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath())
                         .ReadAllText().Replace("\n", string.Empty),
@@ -43,7 +48,44 @@ namespace LNDroneController.Tests
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
-      
+
+        [Test]
+        public void GenerateJSONConfigFile()
+        {
+            var saveTo = Environment.GetEnvironmentVariable("HOME") + "/LNDroneController/drone-config.json";
+            var data = new List<NodeConnectionSetings>();
+            for (var i = 0; i < 25; i++)
+            {
+                var node = new NodeConnectionSetings
+                {
+                    TlsCertFilePath = Environment.GetEnvironmentVariable("HOME") +
+                                      $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/tls.cert".MapAbsolutePath(),
+                    MacaroonFilePath = Environment.GetEnvironmentVariable("HOME") +
+                                       $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/data/chain/bitcoin/signet/admin.macaroon"
+                                           .MapAbsolutePath(),
+                    LocalIPPath = (Environment.GetEnvironmentVariable("HOME") +
+                                   $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip"
+                                       .MapAbsolutePath()),
+                    LocalIP = (Environment.GetEnvironmentVariable("HOME") +
+                               $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath())
+                        .ReadAllText().Replace("\n", string.Empty),
+                    Host = $"playground-lnd-{i}:10009",
+                };
+                data.Add(node);
+            }
+            
+
+            File.WriteAllText(saveTo,data.ToJson(),Encoding.UTF8);
+        }
+        
+        [Test]
+        public void ReadJSONConfigFile()
+        {
+            var saveTo = Environment.GetEnvironmentVariable("HOME") + "/LNDroneController/drone-config.json";
+            var text = File.ReadAllText(saveTo, Encoding.UTF8);
+            var data = text.FromJson<List<NodeConnectionSetings>>();
+            data.PrintDump();
+        }
         [Test]
         public async Task CrossConnectCluster()
         {
