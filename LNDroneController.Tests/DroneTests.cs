@@ -41,6 +41,17 @@ namespace LNDroneController.Tests
                 nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
+
+        [Test]
+        public async Task GetBalances()
+        {
+            var result = await NodeConnections[0].GetChannels();
+            foreach(var r in result)
+            {
+                $"{r.ChanId} - {r.LocalBalance/(double)r.Capacity}".Print();
+            }
+        }
+
         [Test]
         public async Task ListPayments()
         {
@@ -88,11 +99,19 @@ namespace LNDroneController.Tests
             var channels = await NodeConnections[0].ListActiveChannels();
             channels.PrintDump();
         }
+
         [Test]
         public async Task ListInactiveChannels()
         {
-            var channels = await NodeConnections[0].ListInactiveChannels();
-            channels.PrintDump();
+            await NodeConnections.ParallelForEachAsync( async node =>
+            {
+                var channels = await node.ListInactiveChannels();
+                if (channels.Count > 0)
+                {
+                    $"{node.LocalAlias}:".Print();
+                    channels.PrintDump();
+                }
+            },10);
         }
         [Test]
         public async Task ListAllChannels()

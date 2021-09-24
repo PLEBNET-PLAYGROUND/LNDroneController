@@ -126,15 +126,15 @@ namespace LNDroneController.Tests
             var nodes = await NodeConnections[0].DescribeGraph();
             //var tasks = new List<Task<Payment>>(); 
             var bag = new ConcurrentBag<Payment>();
-            foreach (var baseNode in NodeConnections)
+            foreach (var baseNode in NodeConnections.GetRandomFromList(5))
             {
-                await NodeConnections.ParallelForEachAsync(async node =>
+                await NodeConnections.GetRandomFromList(5).ParallelForEachAsync(async node =>
                 {
                     if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
                     {
                         bag.Add(await baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
                     }
-                }, maxDegreeOfParallelism: 20);
+                }, maxDegreeOfParallelism: 5);
             }
 
             var good = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Succeeded).Count();

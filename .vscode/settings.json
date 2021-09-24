@@ -1,3 +1,4 @@
 {
-    "dotnet-test-explorer.testProjectPath":"**/*Tests.@(csproj|vbproj|fsproj)"
+    "dotnet-test-explorer.testProjectPath": "**/*Tests.@(csproj|vbproj|fsproj)",
+    "cSpell.enabled": true
 }
