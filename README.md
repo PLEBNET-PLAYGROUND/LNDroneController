@@ -6,7 +6,7 @@
   
 
 ## drone-config.json file format
-Below is example config. LocalIPPath is not required, but used if provided to read a file with local IP address and map a ClearnetConnectionString if not being directly adversited via GetInfo LND call. 
+Below is example config. LocalIPPath is not required, but used if provided to read a file with local IP address and map a ClearnetConnectionString if not being directly advertised via GetInfo LND call. 
   ```
 [
     {
