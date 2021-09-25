@@ -29,7 +29,7 @@ namespace LNDroneController.Tests
         {
             for (var i = 0; i < 25; i++)
             {
-                var node = new NodeConnectionSetings
+                var node = new NodeConnectionSettings
                 {
                     TlsCertFilePath = Environment.GetEnvironmentVariable("HOME") +
                                       $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/tls.cert".MapAbsolutePath(),
@@ -50,209 +50,291 @@ namespace LNDroneController.Tests
         }
 
         [Test]
-        public void GenerateJSONConfigFile()
+        public async Task UpdateChannelPolicy()
         {
-            var saveTo = Environment.GetEnvironmentVariable("HOME") + "/LNDroneController/drone-config.json";
-            var data = new List<NodeConnectionSetings>();
-            for (var i = 0; i < 25; i++)
+             await NodeConnections.ParallelForEachAsync(async n =>
             {
-                var node = new NodeConnectionSetings
+                var r =await n.UpdateChannelPolicy(new PolicyUpdateRequest
                 {
-                    TlsCertFilePath = Environment.GetEnvironmentVariable("HOME") +
-                                      $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/tls.cert".MapAbsolutePath(),
-                    MacaroonFilePath = Environment.GetEnvironmentVariable("HOME") +
-                                       $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/data/chain/bitcoin/signet/admin.macaroon"
-                                           .MapAbsolutePath(),
-                    LocalIPPath = (Environment.GetEnvironmentVariable("HOME") +
-                                   $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip"
-                                       .MapAbsolutePath()),
-                    LocalIP = (Environment.GetEnvironmentVariable("HOME") +
-                               $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath())
-                        .ReadAllText().Replace("\n", string.Empty),
-                    Host = $"playground-lnd-{i}:10009",
-                };
-                data.Add(node);
-            }
+                    BaseFeeMsat = 1000,
+                    Global = true,
+                    FeeRate = 500,
+                    TimeLockDelta = 40,
+                    MinHtlcMsat = 1,
+                });
+                r.PrintDump();
+            }, 10);
             
-
-            File.WriteAllText(saveTo,data.ToJson(),Encoding.UTF8);
         }
-        
-        [Test]
-        public void ReadJSONConfigFile()
-        {
-            var saveTo = Environment.GetEnvironmentVariable("HOME") + "/LNDroneController/drone-config.json";
-            var text = File.ReadAllText(saveTo, Encoding.UTF8);
-            var data = text.FromJson<List<NodeConnectionSetings>>();
-            data.PrintDump();
-        }
-        [Test]
-        public async Task CrossConnectCluster()
-        {
-
-            foreach (var baseNode in NodeConnections)
+            [Test]
+        public void GenerateJSONConfigFile()
             {
-                foreach (var node in NodeConnections)
+                var saveTo = Environment.GetEnvironmentVariable("HOME") + "/LNDroneController/drone-config.json";
+                var data = new List<NodeConnectionSettings>();
+                for (var i = 0; i < 25; i++)
                 {
-                    if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
+                    var node = new NodeConnectionSettings
+                    {
+                        TlsCertFilePath = Environment.GetEnvironmentVariable("HOME") +
+                                          $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/tls.cert".MapAbsolutePath(),
+                        MacaroonFilePath = Environment.GetEnvironmentVariable("HOME") +
+                                           $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/data/chain/bitcoin/signet/admin.macaroon"
+                                               .MapAbsolutePath(),
+                        LocalIPPath = (Environment.GetEnvironmentVariable("HOME") +
+                                       $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip"
+                                           .MapAbsolutePath()),
+                        LocalIP = (Environment.GetEnvironmentVariable("HOME") +
+                                   $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath())
+                            .ReadAllText().Replace("\n", string.Empty),
+                        Host = $"playground-lnd-{i}:10009",
+                    };
+                    data.Add(node);
+                }
+
+
+                File.WriteAllText(saveTo, data.ToJson(), Encoding.UTF8);
+            }
+
+            [Test]
+            public void ReadJSONConfigFile()
+            {
+                var saveTo = Environment.GetEnvironmentVariable("HOME") + "/LNDroneController/drone-config.json";
+                var text = File.ReadAllText(saveTo, Encoding.UTF8);
+                var data = text.FromJson<List<NodeConnectionSettings>>();
+                data.PrintDump();
+            }
+            [Test]
+            public async Task CrossConnectCluster()
+            {
+
+                foreach (var baseNode in NodeConnections)
+                {
+                    var disconnectedChannels = await baseNode.ListInactiveChannels();
+                    foreach (var node in NodeConnections)
+                    {
+                        
+                        
+                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey && disconnectedChannels.Any(t=>t.RemotePubkey == node.LocalNodePubKey)) //not self and disconnected
+                        {
+                            try
+                            {
+                                //disconnect & reconnect
+                                var disconnect = await baseNode.Disconnect(node.LocalNodePubKey);
+                            }
+                            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                            {
+                                e.PrintDump();
+                            }
+
+                            try
+                            {
+                                //disconnect & reconnect
+                                var result = await baseNode.Connect(node.ClearnetConnectString, true);
+                                result.PrintDump();
+                            }
+                            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                            {
+                                e.PrintDump();
+                            }
+                        }
+                    }
+                }
+            }
+            [Test]
+            public async Task CrossPayCluster()
+            {
+                var nodes = await NodeConnections[0].DescribeGraph();
+                //var tasks = new List<Task<Payment>>(); 
+                var bag = new ConcurrentBag<Payment>();
+                foreach (var baseNode in NodeConnections.GetRandomFromList(5))
+                {
+                    await NodeConnections.GetRandomFromList(5).ParallelForEachAsync(async node =>
+                    {
+                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
+                        {
+                            bag.Add(await baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
+                        }
+                    }, maxDegreeOfParallelism: 5);
+                }
+
+                var good = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Succeeded).Count();
+                var bad = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Failed).Count();
+                $"Success: {good}/{bag.Count()} Fail: {bad}  {(1.0 * good / bag.Count * 100)}%".Print();
+
+            }
+            [Test]
+            public async Task ConnectRandomNodes()
+            {
+                foreach (var baseNode in NodeConnections)
+                {
+
+                    var nodes = await NodeConnections.GetNewRandomNodes(baseNode, 15);
+
+                    Console.WriteLine($"Node: {baseNode.LocalAlias}");
+
+                    foreach (var connectToNode in nodes)
                     {
                         try
                         {
-                            //disconnect & reconnect
-                            var disconnect = await baseNode.Disconnect(node.LocalNodePubKey);
-                        }
-                        catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
-                        {
-                            e.PrintDump();
-                        }
-
-                        try
-                        {
-                            //disconnect & reconnect
-                            var result = await baseNode.Connect(node.ClearnetConnectString);
+                            Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
+                            var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
                             result.PrintDump();
                         }
-                        catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                        catch (Grpc.Core.RpcException e)
                         {
-                            e.PrintDump();
+                            e.Status.Detail.PrintDump();
                         }
                     }
                 }
             }
-        }
-        [Test]
-        public async Task CrossPayCluster()
-        {
-            var nodes = await NodeConnections[0].DescribeGraph();
-            //var tasks = new List<Task<Payment>>(); 
-            var bag = new ConcurrentBag<Payment>();
-            foreach (var baseNode in NodeConnections.GetRandomFromList(5))
+            [Test]
+            //[Ignore("Remove Ignore if you really want to do this")]
+            public async Task SpecficNodeOpenChannelsWithRandomNodes()
             {
-                await NodeConnections.GetRandomFromList(5).ParallelForEachAsync(async node =>
+                List<string> pubkeys = new List<string>();
+                NodeConnections.ForEach(x=>pubkeys.Add(x.LocalNodePubKey));
+
+                // 5
+                // 6
+                // 7
+                // 11
+                // 13
+                // 19
+                // 21
+                // 22
+                // 34
+                var baseNode = NodeConnections[22];
                 {
-                    if (node.LocalNodePubKey != baseNode.LocalNodePubKey)
+                    var graph = (await baseNode.DescribeGraph()).Nodes.Where(x=>!pubkeys.Contains((x.PubKey))).ToList();
+                    graph.Count().Print();
+                    var nodes = await NodeConnections.GetNewRandomNodes(baseNode,5);
+
+                    Console.WriteLine($"Node: {baseNode.LocalAlias}");
+
+                    foreach (var connectToNode in nodes)
                     {
-                        bag.Add(await baseNode.KeysendPayment(node.LocalNodePubKey, 100, timeoutSeconds: 5));
-                    }
-                }, maxDegreeOfParallelism: 5);
-            }
-
-            var good = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Succeeded).Count();
-            var bad = bag.Where(x => x.Status == Payment.Types.PaymentStatus.Failed).Count();
-            $"Success: {good}/{bag.Count()} Fail: {bad}  {(1.0 * good / bag.Count * 100)}%".Print();
-
-        }
-        [Test]
-        public async Task ConnectRandomNodes()
-        {
-            foreach (var baseNode in NodeConnections)
-            {
-
-                var nodes = await NodeConnections.GetNewRandomNodes(baseNode, 15);
-
-                Console.WriteLine($"Node: {baseNode.LocalAlias}");
-
-                foreach (var connectToNode in nodes)
-                {
-                    try
-                    {
-                        Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                        var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
-                        result.PrintDump();
-                    }
-                    catch (Grpc.Core.RpcException e)
-                    {
-                        e.Status.Detail.PrintDump();
+                        try
+                        {
+                             
+                            Console.WriteLine($"Connecting: {connectToNode.LocalAlias}");
+                            var result = await baseNode.Connect( connectToNode.ClearnetConnectString);
+                            result.PrintDump(); 
+                            try
+                            {
+                                Console.WriteLine($"Opening: {connectToNode.LocalAlias}  10MSat");
+                                var result2 = await baseNode.OpenChannel(connectToNode.LocalNodePubKey, 100000000L, 50000000L);
+                                result2.PrintDump();
+                            }
+                            catch (Grpc.Core.RpcException e)
+                            {
+                                e.Status.Detail.PrintDump();
+                            }
+                        }
+                        catch (Grpc.Core.RpcException e)
+                        {
+                            e.Status.Detail.PrintDump();
+                        }
+                        
                     }
                 }
             }
-        }
-        [Test]
-        [Ignore("Remove Ignore if you really want to do this")]
-        public async Task OpenChannelsWithRandomNodes()
-        {
-            foreach (var baseNode in NodeConnections)
+            
+            [Test]
+    //        [Ignore("Remove Ignore if you really want to do this")]
+            public async Task OpenChannelsWithRandomNodes()
             {
-
-                var nodes = await NodeConnections.GetNewRandomNodes(baseNode, 15);
-
-                Console.WriteLine($"Node: {baseNode.LocalAlias}");
-
-                foreach (var connectToNode in nodes)
+                List<string> pubkeys = new List<string>();
+                NodeConnections.ForEach(x=>pubkeys.Add(x.LocalNodePubKey));
+                foreach (var baseNode in NodeConnections.GetRandomFromList(5))
                 {
-                    try
+                  //  var graph = (await baseNode.DescribeGraph()).Nodes.Where(x=>!pubkeys.Contains((x.PubKey))).ToList();
+                  //  graph.Count().Print();
+                    var nodes = NodeConnections.ToLightningNodes(); //await graph.GetNewRandomNodes(baseNode, 4);
+
+                    Console.WriteLine($"Node: {baseNode.LocalAlias}");
+
+                    foreach (var connectToNode in nodes)
                     {
-                        Console.WriteLine($"Connecting: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                        var result = await baseNode.Connect(connectToNode.ClearnetConnectString);
-                        result.PrintDump();
-                    }
-                    catch (Grpc.Core.RpcException e)
-                    {
-                        e.Status.Detail.PrintDump();
-                    }
-                    try
-                    {
-                        Console.WriteLine($"Opening: {connectToNode.LocalAlias}  10MSat");
-                        var result2 = await baseNode.OpenChannel(connectToNode.LocalNodePubKey, 10000000L);
-                        result2.PrintDump();
-                    }
-                    catch (Grpc.Core.RpcException e)
-                    {
-                        e.Status.Detail.PrintDump();
+                        try
+                        {
+                            if (connectToNode.Addresses.Count < 1)
+                            {
+                                $"Node has no addresses: {connectToNode.Alias}".Print();
+                                continue;
+                            }
+                            Console.WriteLine($"Connecting: {connectToNode.Alias} : {connectToNode.Addresses.First().Addr}");
+                            var result = await baseNode.Connect( connectToNode.PubKey + "@" + connectToNode.Addresses.First().Addr);
+                            result.PrintDump(); 
+                            try
+                            {
+                                Console.WriteLine($"Opening: {connectToNode.Alias}  10MSat");
+                                var result2 = await baseNode.OpenChannel(connectToNode.PubKey, 10000000L, 5000000L);
+                                result2.PrintDump();
+                                var result22 = await baseNode.Connect( connectToNode.PubKey + "@" + connectToNode.Addresses.First().Addr);
+                            }
+                            catch (Grpc.Core.RpcException e)
+                            {
+                                e.Status.Detail.PrintDump();
+                            }
+                        }
+                        catch (Grpc.Core.RpcException e)
+                        {
+                            e.Status.Detail.PrintDump();
+                        }
+                        
                     }
                 }
             }
-        }
-        [Test]
-        public async Task ProbePayment()
-        {
-            var response = await NodeConnections[0].ProbePayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10);
-            var result = response.FailureReason.ToString() == "FailureReasonIncorrectPaymentDetails" ? "Online" : response.FailureReason.ToString();
-            $"HelloJessica [signet] @ 10sats - {result} - {response.FailureReason}".Print();
-        }
-        [Test]
-        public async Task SendPaymentWithMessage()
-        {
-            var response = await NodeConnections[0].KeysendPayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10, 10, message: "Hello World!");
-            response.PrintDump();
-        }
-        private static async Task KeySendWithMessage(LNDNodeConnection baseNode, LNDNodeConnection connectToNode)
-        {
-            try
+            [Test]
+            public async Task ProbePayment()
             {
-                Console.WriteLine($"KeySending: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
-                var result = await baseNode.KeysendPayment(connectToNode.LocalNodePubKey, 10, 10, "Hello World!");
-                int i = 0;
-                foreach (var h in result.Htlcs)
+                var response = await NodeConnections[0].ProbePayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10);
+                var result = response.FailureReason.ToString() == "FailureReasonIncorrectPaymentDetails" ? "Online" : response.FailureReason.ToString();
+                $"HelloJessica [signet] @ 10sats - {result} - {response.FailureReason}".Print();
+            }
+            [Test]
+            public async Task SendPaymentWithMessage()
+            {
+                var response = await NodeConnections[0].KeysendPayment("03ee9d906caa8e8e66fe97d7a76c2bd9806813b0b0f1cee8b9d03904b538f53c4e", 10, 10, message: "Hello World!");
+                response.PrintDump();
+            }
+            private static async Task KeySendWithMessage(LNDNodeConnection baseNode, LNDNodeConnection connectToNode)
+            {
+                try
                 {
-                    i++;
-                    $"HTLC Attempt #{i} : Hops {h.Route.Hops.Count} Status:{h.Status}".Print();
+                    Console.WriteLine($"KeySending: {connectToNode.LocalAlias} : {connectToNode.ClearnetConnectString}");
+                    var result = await baseNode.KeysendPayment(connectToNode.LocalNodePubKey, 10, 10, "Hello World!");
+                    int i = 0;
+                    foreach (var h in result.Htlcs)
+                    {
+                        i++;
+                        $"HTLC Attempt #{i} : Hops {h.Route.Hops.Count} Status:{h.Status}".Print();
+                    }
+                }
+                catch (Grpc.Core.RpcException e)
+                {
+                    e.Status.Detail.PrintDump();
+                    Assert.Fail();
                 }
             }
-            catch (Grpc.Core.RpcException e)
+            private static async Task KeySendWithMessage(LNDNodeConnection baseNode, LightningNode connectToNode)
             {
-                e.Status.Detail.PrintDump();
-                Assert.Fail();
-            }
-        }
-        private static async Task KeySendWithMessage(LNDNodeConnection baseNode, LightningNode connectToNode)
-        {
-            try
-            {
-                Console.WriteLine($"KeySending: {connectToNode.Alias} : {connectToNode.PubKey}");
-                var result = await baseNode.KeysendPayment(connectToNode.PubKey, 10, 10, "Hello World!");
-                int i = 0;
-                foreach (var h in result.Htlcs)
+                try
                 {
-                    i++;
-                    $"HTLC Attempt #{i} : Hops {h.Route.Hops.Count} Status:{h.Status}".Print();
+                    Console.WriteLine($"KeySending: {connectToNode.Alias} : {connectToNode.PubKey}");
+                    var result = await baseNode.KeysendPayment(connectToNode.PubKey, 10, 10, "Hello World!");
+                    int i = 0;
+                    foreach (var h in result.Htlcs)
+                    {
+                        i++;
+                        $"HTLC Attempt #{i} : Hops {h.Route.Hops.Count} Status:{h.Status}".Print();
+                    }
                 }
-            }
-            catch (Grpc.Core.RpcException e)
-            {
-                e.Status.Detail.PrintDump();
-                Assert.Fail();
+                catch (Grpc.Core.RpcException e)
+                {
+                    e.Status.Detail.PrintDump();
+                    Assert.Fail();
+                }
             }
         }
     }
-}

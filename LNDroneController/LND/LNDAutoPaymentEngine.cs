@@ -24,25 +24,36 @@ namespace LNDroneController.LND
                 var graph = await connection.DescribeGraph();
 
                 var amount = r.Next(minSendAmount, maxSendAmount);
-                var nodesToPay = await graph.Nodes.GetNewRandomNodes(connection, numberOfPayments);
+                var nodesToPay = await ClusterNodes.GetNewRandomNodes(connection, numberOfPayments);
 
                 await nodesToPay.ParallelForEachAsync(async n =>
                 {
                     try
                     {
-                        var payment = await connection.KeysendPayment(n.PubKey, amount, (long)(10+ amount * (1 / 1000.0)), null, 20); //1000 ppm max fee, 20second timeout
+                        var payment = await connection.KeysendPayment(n.LocalNodePubKey, amount, (long)(10+ amount * (1 / 500.0)), null, 20); //2000 ppm max fee, 20second timeout
                         if (payment.FailureReason == Lnrpc.PaymentFailureReason.FailureReasonNone)
                         {
-                            $"{DateTime.UtcNow}:{connection.LocalAlias} - {amount} sats sent at {Math.Ceiling(payment.FeeSat/(decimal)amount*1000000)} ppm rate in {payment.Htlcs.Last(x=>x.Status == Lnrpc.HTLCAttempt.Types.HTLCStatus.Succeeded).Route.Hops.Count} hops to {n.Alias} ({n.PubKey})".Print();
+                            $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sats sent at {Math.Ceiling(payment.FeeSat/(decimal)amount*1000000)} ppm rate in {payment.Htlcs.Last(x=>x.Status == Lnrpc.HTLCAttempt.Types.HTLCStatus.Succeeded).Route.Hops.Count} hops to {n.LocalAlias} ({n.LocalNodePubKey})".Print();
                         }
                         else
                         {
-                            $"{DateTime.UtcNow}:{connection.LocalAlias} - {amount} sat failed to send: {payment.FailureReason}".Print();
+                            var chanId = payment.Htlcs.LastOrDefault()?.Route.Hops.LastOrDefault()?.ChanId;
+                            if (chanId.HasValue)
+                            {
+                            var channelInfo = await connection.GetChannelInfo(chanId.Value);
+                                var getNodeInfo = await connection.GetNodeInfo(connection.LocalNodePubKey == channelInfo.Node2Pub ? channelInfo.Node1Pub : channelInfo.Node2Pub);
+                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.FailureReason} to {getNodeInfo.Node.Alias}".Print();
+                            }
+                            else
+                            {
+                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.Status}".Print();
+                            }
+                           
                         }
                     }
                     catch (Exception e)
                     {
-                        $"{DateTime.UtcNow}: {e}".Print();
+                        $"{DateTime.UtcNow} - {e}".Print();
                         //suck up errors
                     }
                 }, 4, token);

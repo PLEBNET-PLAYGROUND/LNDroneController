@@ -41,8 +41,8 @@ namespace LNDroneController
             return response;
         }
 
-        
-        public static async Task<List<LightningNode>> GetNewRandomNodes(this RepeatedField<LightningNode> nodes, LNDNodeConnection baseNode, int count, int maxCycleCount = 1000)
+
+        public static async Task<List<LightningNode>> GetNewRandomNodes(this IList<LightningNode> nodes, LNDNodeConnection baseNode, int count, int maxCycleCount = 1000)
         {
             var response = new List<LightningNode>();
             var randomMax = nodes.Count - 1;
@@ -57,7 +57,7 @@ namespace LNDroneController
                     var nextRandomNode = nodes[r.Next(randomMax)];
                     //find nodes not in existing list, not self, and not any existing channel
                     if (!response.Contains(nextRandomNode) &&
-                        nextRandomNode.PubKey != baseNode.LocalNodePubKey && 
+                        nextRandomNode.PubKey != baseNode.LocalNodePubKey &&
                         existingChannels.All(x => x.RemotePubkey != nextRandomNode.PubKey))
                     {
                         found = true;
@@ -81,19 +81,22 @@ namespace LNDroneController
         {
             return nodes.ConvertAll(x => x.ToLightningNode());
         }
-        
-        public static async Task<(IEnumerable<Channel> locals,IEnumerable<Channel> remotes)> FindRebalanceChannelSet(this List<Channel> channels, long amountToMove)
+
+        public static (IEnumerable<Channel> localSources, IEnumerable<Channel> remoteTargets) FindRebalanceChannelSet(this List<Channel> channels, long amountToMove)
         {
-            return ( channels.FindLocalSources(amountToMove), channels.FindRemoteTargets(amountToMove));
+            var local = channels.FindLocalSources(amountToMove).ToList();
+            return (local, channels.FindRemoteTargets(local, amountToMove));
         }
-        public static IEnumerable<Channel> FindLocalSources(this List<Channel> channels, long amountToMove)
+        public static IEnumerable<Channel> FindLocalSources(this IList<Channel> channels, long amountToMove)
         {
-            return channels.Where(x => x.Active && (x.LocalBalance-amountToMove) > LNDChannelLogic.MinLocalBalanceSats);
+            //return channels.Where(x => x.Active && (x.LocalBalance - amountToMove) > LNDChannelLogic.MinLocalBalanceSats && (x.LocalBalance / (double)x.Capacity) >= LNDChannelLogic.MinLocalBalancePercentage);
+            return channels.Where(x => x.Active && (x.LocalBalance / (double)x.Capacity) >= LNDChannelLogic.MinLocalBalancePercentage);
         }
 
-        public static IEnumerable<Channel> FindRemoteTargets(this List<Channel> channels, long amountToMove)
+        public static IEnumerable<Channel> FindRemoteTargets(this IList<Channel> channels, IList<Channel> excludeChannels, long amountToMove)
         {
-            return channels.Where(x => x.Active && (x.RemoteBalance-amountToMove) > LNDChannelLogic.MinRemoteBalanceSats);
+           // return channels.Where(x => x.Active && (x.RemoteBalance - amountToMove) > LNDChannelLogic.MinRemoteBalanceSats && (x.RemoteBalance / (double)x.Capacity) >= LNDChannelLogic.MinRemoteBalancePercentage);
+            return channels.Where(x => x.Active &&  (x.LocalBalance / (double)x.Capacity) <= LNDChannelLogic.MaxRemoteLocalBalancePercentage && !excludeChannels.Contains(x));
         }
     }
 }

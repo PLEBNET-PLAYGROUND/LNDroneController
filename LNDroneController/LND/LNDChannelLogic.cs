@@ -22,7 +22,8 @@ namespace LNDroneController.LND
 {
     public static class LNDChannelLogic
     {
-        public static long MinLocalBalanceSats { get; set; } = 1000000L; 
-        public static long MinRemoteBalanceSats { get; set; } = 1000000L;        
+        public static double MinLocalBalancePercentage {get;set;} = 0.2;
+        public static double MaxRemoteLocalBalancePercentage {get;set;} = 0.5;
+
     }
 }

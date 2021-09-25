@@ -60,7 +60,7 @@ namespace LNDroneController.LND
                 "https://" + host,
                 new GrpcChannelOptions
                 {
-                    DisposeHttpClient = true, 
+                    DisposeHttpClient = true,
                     HttpHandler = httpClientHandler,
                     Credentials = ChannelCredentials.Create(new SslCredentials(), credentials),
                     MaxReceiveMessageSize = 128000000
@@ -78,25 +78,73 @@ namespace LNDroneController.LND
                 ClearnetConnectString = $"{nodeInfo.IdentityPubkey}@{localIP}:9735";
             }
         }
- 
-         
+
+        // public async Task<NodeInfo> GetNodeInfo(string remotePubkey, bool includeChannels = false )
+        // {
+        //     return await LightningClient.GetNodeInfoAsync(new NodeInfoRequest{
+        //         PubKey = remotePubkey,
+        //         IncludeChannels = includeChannels,
+        //     });
+        // }
+
+        public async Task<ChannelEdge> GetChannelInfo(ulong chanId)
+        {
+            return await LightningClient.GetChanInfoAsync(new ChanInfoRequest{ChanId = chanId});
+        }
+
+        public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount)
+        {
+            var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
+
+            var randomBytes = new byte[32];
+            r.NextBytes(randomBytes);
+            var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(randomBytes);
+            var req = new SendPaymentRequest
+            {
+                AllowSelfPayment = true,
+                Amt = amount,
+                LastHopPubkey = ByteString.CopyFrom(Convert.FromHexString(target.RemotePubkey)),
+                FeeLimitSat = (long)(amount * (1 / 200.0) + 100),            
+                TimeoutSeconds = 60,
+             //   NoInflightUpdates=true,
+                Dest = ByteString.CopyFrom(Convert.FromHexString(LocalNodePubKey)), //self
+               // PaymentHash = ByteString.CopyFrom(hash),
+               // PaymentRequest = paymentReq.PaymentRequest,
+                PaymentAddr = paymentReq.PaymentAddr,
+            };
+            foreach (var chan in sources)
+            {
+                req.OutgoingChanIds.Add(chan.ChanId);
+            }
+          //  req.DestCustomRecords.Add(5482373484, ByteString.CopyFrom(randomBytes));  //keysend 
+
+            var streamingCallResponse = RouterClient.SendPaymentV2(req);
+            Payment paymentResponse = null;
+            await foreach (var res in streamingCallResponse.ResponseStream.ReadAllAsync())
+            {
+                paymentResponse = res;
+            }
+            return paymentResponse;
+        }
+
         public Task Stop()
         {
             gRPCChannel.Dispose();
             return Task.CompletedTask;
         }
-        
+
         public async Task<GetInfoResponse> GetInfo()
         {
             return await LightningClient.GetInfoAsync(new GetInfoRequest());  //Get node info
         }
-        
+
         /// <summary>
         /// List all active channels
         /// </summary>
         public async Task<List<Channel>> ListActiveChannels()
         {
-            var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest{ActiveOnly = true});
+            var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest { ActiveOnly = true });
             return response.Channels.ToList();
         }
         /// <summary>
@@ -104,7 +152,7 @@ namespace LNDroneController.LND
         /// </summary>
         public async Task<List<Channel>> ListInactiveChannels()
         {
-            var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest{InactiveOnly = true});
+            var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest { InactiveOnly = true });
             return response.Channels.ToList();
         }
 
@@ -113,7 +161,7 @@ namespace LNDroneController.LND
             var inactive = await ListInactiveChannels();
             foreach (var chan in inactive)
             {
-                var nodeInfo = await GetNodeInfo(chan.RemotePubkey);
+                var nodeInfo = await GetNodeInfo(chan.RemotePubkey,false);
                 foreach (var addr in nodeInfo.Node.Addresses)
                 {
                     try
@@ -128,15 +176,17 @@ namespace LNDroneController.LND
                             Timeout = 10L,
                         });
                     }
-                    catch (RpcException e) when (e.StatusCode == StatusCode.Unknown) {}
-                    
+                    catch (RpcException e) when (e.StatusCode == StatusCode.Unknown) {
+                        Debug.Print(e.Dump());
+                     }
+
                 }
             }
 
             return;
         }
 
-        private async Task<NodeInfo> GetNodeInfo(string pubkey, bool includeChannels = false)
+        public async Task<NodeInfo> GetNodeInfo(string pubkey, bool includeChannels = false)
         {
             return await LightningClient.GetNodeInfoAsync(new NodeInfoRequest
             {
@@ -163,7 +213,7 @@ namespace LNDroneController.LND
         }
         public async Task<DisconnectPeerResponse> Disconnect(string pubkey)
         {
-            return await LightningClient.DisconnectPeerAsync(new DisconnectPeerRequest{PubKey = pubkey});
+            return await LightningClient.DisconnectPeerAsync(new DisconnectPeerRequest { PubKey = pubkey });
         }
         public async Task<ChannelPoint> OpenChannel(string publicKey, long localFundingAmount, long pushSat = 0, ulong satPerVbyte = 1)
         {
@@ -356,6 +406,11 @@ namespace LNDroneController.LND
                     PaymentHash = paymentHash
                 }, deadline: DateTime.UtcNow.AddMinutes(1));
         }
+
+        public async Task<PolicyUpdateResponse> UpdateChannelPolicy(PolicyUpdateRequest policy)
+        {
+            return await LightningClient.UpdateChannelPolicyAsync(policy);
+        }
         public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60)
         {
             var randomBytes = new byte[32];
@@ -371,7 +426,7 @@ namespace LNDroneController.LND
                 TimeoutSeconds = timeoutSeconds,
             };
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
-            if (message != null) 
+            if (message != null)
                 payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.Default.GetBytes(message))); //message type
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
@@ -425,6 +480,6 @@ namespace LNDroneController.LND
             return edge.Node1Pub == LocalNodePubKey ? edge.Node2Pub : edge.Node1Pub;
         }
 
-        
+
     }
 }

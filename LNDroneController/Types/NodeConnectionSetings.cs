@@ -1,6 +1,6 @@
 namespace LNDroneController.Types
 {
-    public class NodeConnectionSetings
+    public class NodeConnectionSettings
     {
         public string TlsCertFilePath {get;set;}
         public string MacaroonFilePath {get;set;}

@@ -1,4 +1,11 @@
 {
     "dotnet-test-explorer.testProjectPath": "**/*Tests.@(csproj|vbproj|fsproj)",
-    "cSpell.enabled": true
+    "cSpell.enabled": true,
+    "cSpell.words": [
+        "Dasync",
+        "Htlc",
+        "Htlcs",
+        "Lnrpc",
+        "Msat"
+    ]
 }

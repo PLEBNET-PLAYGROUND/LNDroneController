@@ -23,7 +23,7 @@ namespace LNDroneController
                 return;
             }
             var nodeConnections = new List<LNDNodeConnection>();
-            var config = File.ReadAllText(args[0],Encoding.UTF8).FromJson<List<NodeConnectionSetings>>();
+            var config = File.ReadAllText(args[0],Encoding.UTF8).FromJson<List<NodeConnectionSettings>>();
             foreach(var node in config)
             {
                 var nodeConnection = new LNDNodeConnection();
@@ -44,6 +44,10 @@ namespace LNDroneController
                 var task = LNDAutoPaymentEngine.Start(node,TimeSpan.FromSeconds(primeSet[r.Next(0,4)]),token:cs.Token);
             }
 
+
+            // var cs = new CancellationTokenSource();
+            // cancellationTokenSources.Add(cs);
+            // var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
 
             Console.WriteLine("Press ANY key to stop process");
             Console.ReadKey();

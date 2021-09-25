@@ -24,7 +24,7 @@ namespace LNDroneController.Tests
         {
             for (var i = 0; i < 25; i++)
             {
-                var node = new NodeConnectionSetings
+                var node = new NodeConnectionSettings
                 {
                     TlsCertFilePath = Environment.GetEnvironmentVariable("HOME") +
                                       $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/tls.cert".MapAbsolutePath(),
@@ -45,11 +45,16 @@ namespace LNDroneController.Tests
         [Test]
         public async Task GetBalances()
         {
-            var result = await NodeConnections[0].GetChannels();
-            foreach(var r in result)
+            foreach (var i in Enumerable.Range(0, 24))
             {
-                $"{r.ChanId} - {r.LocalBalance/(double)r.Capacity}".Print();
+                var result = await NodeConnections[i].GetChannels();
+                $"Node # {i}".Print();
+                foreach(var r in result)
+                {
+                    $"{r.ChanId} - {r.LocalBalance/(double)r.Capacity}".Print();
+                }
             }
+            
         }
 
         [Test]
