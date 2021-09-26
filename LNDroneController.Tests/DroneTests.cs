@@ -96,7 +96,10 @@ namespace LNDroneController.Tests
         [Test]
         public async Task TryReconnect()
         {
-            await NodeConnections[0].TryReconnect();
+            foreach (var node in NodeConnections)
+            {
+                await node.TryReconnect();
+            }
         }
         [Test]
         public async Task ListActiveChannels()
@@ -105,6 +108,12 @@ namespace LNDroneController.Tests
             channels.PrintDump();
         }
 
+        [Test]
+        public async Task ListPeers()
+        {
+            var peers = await NodeConnections[0].ListPeers();
+            peers.PrintDump();
+        }
         [Test]
         public async Task ListInactiveChannels()
         {
@@ -116,7 +125,7 @@ namespace LNDroneController.Tests
                     $"{node.LocalAlias}:".Print();
                     channels.PrintDump();
                 }
-            },10);
+            },1);
         }
         [Test]
         public async Task ListAllChannels()

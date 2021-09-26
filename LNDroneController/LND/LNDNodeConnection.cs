@@ -94,7 +94,7 @@ namespace LNDroneController.LND
 
         public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount)
         {
-            var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
+        //    var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
 
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
@@ -109,9 +109,9 @@ namespace LNDroneController.LND
                 TimeoutSeconds = 60,
              //   NoInflightUpdates=true,
                 Dest = ByteString.CopyFrom(Convert.FromHexString(LocalNodePubKey)), //self
-               // PaymentHash = ByteString.CopyFrom(hash),
+                PaymentHash = ByteString.CopyFrom(hash),
                // PaymentRequest = paymentReq.PaymentRequest,
-                PaymentAddr = paymentReq.PaymentAddr,
+               // PaymentAddr = paymentReq.PaymentAddr,
             };
             foreach (var chan in sources)
             {
@@ -154,6 +154,11 @@ namespace LNDroneController.LND
         {
             var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest { InactiveOnly = true });
             return response.Channels.ToList();
+        }
+        
+        public async Task<ListPeersResponse> ListPeers()
+        {
+            return await LightningClient.ListPeersAsync(new ListPeersRequest{LatestError = true});
         }
 
         public async Task TryReconnect()

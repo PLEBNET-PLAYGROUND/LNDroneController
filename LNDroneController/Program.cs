@@ -37,17 +37,17 @@ namespace LNDroneController
             var cancellationTokenSources = new List<CancellationTokenSource>();
             var primeSet = new int[] {53, 59, 61, 67, 71};
 
-            foreach(var node in nodeConnections)
-            {
-                var cs = new CancellationTokenSource();
-                cancellationTokenSources.Add(cs);
-                var task = LNDAutoPaymentEngine.Start(node,TimeSpan.FromSeconds(primeSet[r.Next(0,4)]),token:cs.Token);
-            }
+            // foreach(var node in nodeConnections)
+            // {
+            //     var cs = new CancellationTokenSource();
+            //     cancellationTokenSources.Add(cs);
+            //     var task = LNDAutoPaymentEngine.Start(node,TimeSpan.FromSeconds(primeSet[r.Next(0,4)]),token:cs.Token);
+            // }
 
 
-            // var cs = new CancellationTokenSource();
-            // cancellationTokenSources.Add(cs);
-            // var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
+            var cs = new CancellationTokenSource();
+            cancellationTokenSources.Add(cs);
+            var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
 
             Console.WriteLine("Press ANY key to stop process");
             Console.ReadKey();
