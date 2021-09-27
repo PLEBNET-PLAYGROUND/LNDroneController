@@ -29,15 +29,17 @@ namespace LNDroneController.LND
                     var channels = await node.GetChannels();
                     var set = channels.FindRebalanceChannelSet(amount);
                     
-                        // foreach(var target in set.remoteTargets)
-                        // {
-                        //    var result = await node.Rebalance(set.localSources.ToList(),target,amount);
-                        //    result.PrintDump();
-                        // }
-                        await set.remoteTargets.ParallelForEachAsync(async target => {
-                            var result = await node.Rebalance(set.localSources.ToList(),target,amount);
-                           $"{node.LocalAlias} - {set.localSources.Select(x=>x.ChanId).ToJson()} to {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
-                        }, 1);
+                        foreach(var target in set.remoteTargets)
+                        {
+                           var result = await node.Rebalance(set.localSources.ToList(),target,amount);
+                           var toNodeAlias = await node.GetNodeAliasFromPubKey(target.RemotePubkey);
+                           $"{result.Status} = {node.LocalAlias} - {set.localSources.Select(x=>x.ChanId).ToJson()} to {toNodeAlias}:{target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
+
+                        }
+                        // await set.remoteTargets.ParallelForEachAsync(async target => {
+                        //     var result = await node.Rebalance(set.localSources.ToList(),target,amount);
+                        //    $"{node.LocalAlias} - {set.localSources.Select(x=>x.ChanId).ToJson()} to {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
+                        // }, 1);
                 
                 }
                 Debug.Print("LNClusterRebalancer waiting for next loop...");

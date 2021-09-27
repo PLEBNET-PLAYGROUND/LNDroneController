@@ -103,6 +103,28 @@ namespace LNDroneController.Tests
                 var data = text.FromJson<List<NodeConnectionSettings>>();
                 data.PrintDump();
             }
+            
+            [Test]
+            public async Task ListInactiveChannels()
+            {
+                await NodeConnections.ParallelForEachAsync( async node =>
+                {
+                    var channels = await node.ListInactiveChannels();
+                    if (channels.Count > 0)
+                    {
+                        $"{node.LocalAlias}:".Print();
+
+                        foreach (var c in channels)
+                        {
+                            var pubkey = c.RemotePubkey;
+                            var alias = await node.GetNodeAliasFromPubKey(pubkey);
+                            $"\t{alias} - ChanId: {c.ChanId}".Print();
+                        }
+                        //channels.PrintDump();
+                    }
+                },1);
+            }
+            
             [Test]
             public async Task CrossConnectCluster()
             {

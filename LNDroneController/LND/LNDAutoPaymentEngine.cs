@@ -8,9 +8,10 @@ using Dasync.Collections;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using Serilog;
 namespace LNDroneController.LND
 {
-    public static class LNDAutoPaymentEngine
+    public static class LNDAutoPaymentEngine 
     {
         private static Random r = new Random();
         public static List<LNDNodeConnection> ClusterNodes {get; set;}
@@ -40,13 +41,12 @@ namespace LNDroneController.LND
                             var chanId = payment.Htlcs.LastOrDefault()?.Route.Hops.LastOrDefault()?.ChanId;
                             if (chanId.HasValue)
                             {
-                            var channelInfo = await connection.GetChannelInfo(chanId.Value);
-                                var getNodeInfo = await connection.GetNodeInfo(connection.LocalNodePubKey == channelInfo.Node2Pub ? channelInfo.Node1Pub : channelInfo.Node2Pub);
-                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.FailureReason} to {getNodeInfo.Node.Alias}".Print();
+                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.FailureReason} to {n.LocalAlias}".Print();
                             }
                             else
                             {
-                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.Status}".Print();
+                                
+                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {n.LocalAlias} - {payment.Status}".Print();
                             }
                            
                         }
