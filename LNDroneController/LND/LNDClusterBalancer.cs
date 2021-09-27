@@ -25,26 +25,27 @@ namespace LNDroneController.LND
                 foreach (var node in ClusterNodes)
                 {
                     //await node.TryReconnect();
-                    var amount = 500000L;
-                    var channels = await node.GetChannels();
+                    var amount = 1_000_000L;
+                    var channels = await node.ListActiveChannels();
                     var set = channels.FindRebalanceChannelSet(amount);
                     
-                        foreach(var target in set.remoteTargets)
-                        {
-                           var result = await node.Rebalance(set.localSources.ToList(),target,amount);
-                           var toNodeAlias = await node.GetNodeAliasFromPubKey(target.RemotePubkey);
-                           $"{result.Status} = {node.LocalAlias} - {set.localSources.Select(x=>x.ChanId).ToJson()} to {toNodeAlias}:{target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
+                        // foreach(var target in set.remoteTargets)
+                        // {
+                        //    var result = await node.Rebalance(set.localSources.ToList(),target,amount);
+                        //    var toNodeAlias = await node.GetNodeAliasFromPubKey(target.RemotePubkey);
+                        //    $"{result.Status} = {node.LocalAlias} - {set.localSources.Select(x=>x.ChanId).ToJson()} to {toNodeAlias}:{target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
 
-                        }
-                        // await set.remoteTargets.ParallelForEachAsync(async target => {
-                        //     var result = await node.Rebalance(set.localSources.ToList(),target,amount);
-                        //    $"{node.LocalAlias} - {set.localSources.Select(x=>x.ChanId).ToJson()} to {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
-                        // }, 1);
+                        // }
+                        await set.remoteTargets.ParallelForEachAsync(async target => {
+                            var result = await node.Rebalance(set.localSources.ToList(),target,amount);
+                         //  $"{node.LocalAlias} -d {set.localSources.Select(x=>x.ChanId).ToJson()} to {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
+                           $"{node.LocalAlias} - Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
+                        }, 1);
                 
                 }
                 Debug.Print("LNClusterRebalancer waiting for next loop...");
 
-                await Task.Delay(TimeSpan.FromSeconds(120));
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
             return;
         }

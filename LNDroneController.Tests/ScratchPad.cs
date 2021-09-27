@@ -57,9 +57,9 @@ namespace LNDroneController.Tests
             {
                 var r =await n.UpdateChannelPolicy(new PolicyUpdateRequest
                 {
-                    BaseFeeMsat = 1000,
+                    BaseFeeMsat = 420,
                     Global = true,
-                    FeeRate = 500,
+                    FeeRate = .000500,
                     TimeLockDelta = 40,
                     MinHtlcMsat = 1,
                 });
