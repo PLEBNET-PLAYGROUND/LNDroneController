@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using Google.Protobuf;
 using Grpc.Core;
 using NUnit.Framework;
 using LNDroneController;
@@ -13,6 +14,8 @@ using LNDroneController.LND;
 using ServiceStack;
 using ServiceStack.Text;
 using Lnrpc;
+using NuGet.Frameworks;
+
 namespace LNDroneController.Tests
 {
     public class DroneTests
@@ -60,12 +63,46 @@ namespace LNDroneController.Tests
         [Test]
         public async Task ListPayments()
         {
-            var result = await NodeConnections[0].ListPayments(new ListPaymentsRequest
+            foreach (var node in NodeConnections)
             {
-                IncludeIncomplete = false
-            });
-            result.Payments.Count.Print();
-            result.PrintDump();
+                var result = await NodeConnections[0].ListPayments(new ListPaymentsRequest
+                {
+                    IncludeIncomplete = false
+                });
+                $"{node.LocalAlias} - {result.Payments.Count}".Print(); 
+            }
+            
+        }
+        [Test]
+        public async Task CheckUnableToLocateInvoice()
+        {
+            try
+            {
+                var checkStatus = await NodeConnections[0].CheckInvoiceStatus(new PaymentHash
+                {
+                    RHash = ByteString.Empty
+                });
+            }
+            catch (RpcException e) when (e.StatusCode == StatusCode.Unknown && e.Status.Detail == "unable to locate invoice")
+            {
+                Assert.Pass();
+            }
+            Assert.Fail();
+        }
+        
+        [Test]
+        public async Task ListInvoices()
+        {
+            foreach (var node in NodeConnections)
+            {
+                var result = await NodeConnections[0].ListInvoices(new ListInvoiceRequest
+                {
+                    NumMaxInvoices = 1000000
+                });
+                var settledCount = result.Invoices.Where(t => t.State == Invoice.Types.InvoiceState.Settled).Count();
+                $"{node.LocalAlias} - {settledCount} of {result.Invoices.Count}".Print(); 
+            }
+            
         }
         [Test]
         public async Task PurgePaymentsFailedHTLCs()
@@ -76,6 +113,8 @@ namespace LNDroneController.Tests
             result.PrintDump();
 
         }
+        
+      
         [Test]
         public async Task PurgeAllPayments()
         {

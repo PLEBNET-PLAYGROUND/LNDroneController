@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using Google.Protobuf;
 using Grpc.Core;
 using NUnit.Framework;
 using LNDroneController;
@@ -162,6 +163,33 @@ namespace LNDroneController.Tests
                     }
                 }
             }
+            [Test]
+            public async Task GenerateInvoiceAndPayFromOtherServer()
+            {
+                var invoice = await NodeConnections[0].GenerateInvoice(new Invoice()
+                {
+                    Value = 10,
+                    Memo = "Pay me 10 sats",
+                });
+                invoice.PrintDump();
+                var payInvoice = await NodeConnections[2].PayPaymentRequest(invoice.PaymentRequest);
+                payInvoice.PrintDump();
+                var checkStatus = await NodeConnections[0].CheckInvoiceStatus(new PaymentHash
+                {
+                    RHash = invoice.RHash
+                });
+                checkStatus.PrintDump();
+                if (checkStatus.State == Invoice.Types.InvoiceState.Settled)
+                {
+                    Assert.Pass();
+                }
+                else
+                {
+                    Assert.Fail();
+                }
+            }
+
+           
             [Test]
             public async Task CrossPayCluster()
             {

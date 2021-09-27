@@ -487,5 +487,28 @@ namespace LNDroneController.LND
         }
 
 
+        public async Task<ListInvoiceResponse> ListInvoices(ListInvoiceRequest request)
+        {
+            return await LightningClient.ListInvoicesAsync(request);
+        }
+
+        public async Task<AddInvoiceResponse> GenerateInvoice(Invoice invoice)
+        {
+            return await LightningClient.AddInvoiceAsync(invoice);
+        }
+
+        public async Task<SendResponse> PayPaymentRequest(string invoicePaymentRequest)
+        {
+            var result = await LightningClient.SendPaymentSyncAsync(new SendRequest
+            {
+                PaymentRequest = invoicePaymentRequest
+            });
+            return result;
+        }
+
+        public async Task<Invoice> CheckInvoiceStatus(PaymentHash request)
+        {
+            return await LightningClient.LookupInvoiceAsync(request);
+        }
     }
 }
