@@ -101,13 +101,13 @@ namespace LNDroneController.LND
             var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash(randomBytes);
             var req = new SendPaymentRequest
-            {
-                Amp = true,
+            {      
+           //     Amp = true,                          
                 AllowSelfPayment = true,
                 Amt = amount,
                 LastHopPubkey = ByteString.CopyFrom(Convert.FromHexString(target.RemotePubkey)),
                 FeeLimitSat = (long)(amount*(1/200.0)),            
-                TimeoutSeconds = 60,
+                TimeoutSeconds = 30,
                 NoInflightUpdates=true,
                 Dest = ByteString.CopyFrom(Convert.FromHexString(LocalNodePubKey)), //self
                 PaymentHash = ByteString.CopyFrom(hash),
@@ -118,7 +118,7 @@ namespace LNDroneController.LND
             {
                 req.OutgoingChanIds.Add(chan.ChanId);
             }
-          //  req.DestCustomRecords.Add(5482373484, ByteString.CopyFrom(randomBytes));  //keysend 
+            req.DestCustomRecords.Add(5482373484, ByteString.CopyFrom(randomBytes));  //keysend 
 
             var streamingCallResponse = RouterClient.SendPaymentV2(req);
             Payment paymentResponse = null;

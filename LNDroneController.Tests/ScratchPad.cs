@@ -132,12 +132,12 @@ namespace LNDroneController.Tests
 
                 foreach (var baseNode in NodeConnections)
                 {
-                    var disconnectedChannels = await baseNode.ListInactiveChannels();
+                    
                     foreach (var node in NodeConnections)
                     {
+                        var disconnectedChannels = await baseNode.ListInactiveChannels();
                         
-                        
-                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey && disconnectedChannels.Any(t=>t.RemotePubkey == node.LocalNodePubKey)) //not self and disconnected
+                        if (node.LocalNodePubKey != baseNode.LocalNodePubKey  && disconnectedChannels.Any(t=>t.RemotePubkey == node.LocalNodePubKey)) //not self and disconnected
                         {
                             try
                             {
