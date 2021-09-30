@@ -102,7 +102,6 @@ namespace LNDroneController.LND
             var hash = sha256.ComputeHash(randomBytes);
             var req = new SendPaymentRequest
             {      
-           //     Amp = true,                          
                 AllowSelfPayment = true,
                 Amt = amount,
                 LastHopPubkey = ByteString.CopyFrom(Convert.FromHexString(target.RemotePubkey)),
@@ -111,8 +110,6 @@ namespace LNDroneController.LND
                 NoInflightUpdates=true,
                 Dest = ByteString.CopyFrom(Convert.FromHexString(LocalNodePubKey)), //self
                 PaymentHash = ByteString.CopyFrom(hash),
-               // PaymentRequest = paymentReq.PaymentRequest,
-               // PaymentAddr = paymentReq.PaymentAddr,
             };
             foreach (var chan in sources)
             {

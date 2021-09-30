@@ -40,7 +40,7 @@ namespace LNDroneController.LND
                             var result = await node.Rebalance(set.localSources.ToList(),target,amount);
                          // $"{node.LocalAlias} -d {set.localSources.Select(x=>x.ChanId).ToJson()} to {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
                           $"{node.LocalAlias} - {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status} in {result.Htlcs.LastOrDefault()?.Route.Hops.Count()} hops".Print();
-                        }, 1);
+                        }, 10);
                 
                 }
                 Debug.Print("LNClusterRebalancer waiting for next loop...");
