@@ -21,21 +21,6 @@
     <ItemGroup>
       <ProjectReference Include="..\LNDroneController\LNDroneController.csproj" />
     </ItemGroup>
-<ItemGroup>
-      <!--  Getting Errors with these, need to look why, not important right now    -->
- <!-- 
-    <Protobuf Include="Grpc\verrpc\verrpc.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="Grpc\lcclipb\lncli.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    -->
-    
-    <Protobuf Include="..\Grpc\autopilotrpc\autopilot.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\chainrpc\chainnotifier.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\invoicesrpc\invoices.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\signrpc\signer.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\walletrpc\walletkit.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\wtclientrpc\wtclient.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\watchtowerrpc\watchtower.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\routerrpc\router.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-    <Protobuf Include="..\Grpc\lightning.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
-  </ItemGroup>
+
+
 </Project>

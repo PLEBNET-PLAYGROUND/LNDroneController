@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Security.Policy;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
+using Signrpc;
 
 namespace LNDroneController.LND
 {
@@ -27,6 +28,7 @@ namespace LNDroneController.LND
         private Lightning.LightningClient LightningClient;
         private Router.RouterClient RouterClient;
 
+        public Signer.SignerClient SignClient { get; private set; }
         public string LocalNodePubKey { get; private set; }
         public string LocalAlias { get; private set; }
         public string ClearnetConnectString { get; private set; }
@@ -68,6 +70,7 @@ namespace LNDroneController.LND
 
             LightningClient = new Lnrpc.Lightning.LightningClient(gRPCChannel);
             RouterClient = new Routerrpc.Router.RouterClient(gRPCChannel);
+            SignClient = new Signrpc.Signer.SignerClient(gRPCChannel);
             var nodeInfo = LightningClient.GetInfo(new GetInfoRequest());
             LocalNodePubKey = nodeInfo.IdentityPubkey;
             LocalAlias = nodeInfo.Alias;
@@ -92,6 +95,12 @@ namespace LNDroneController.LND
             return await LightningClient.GetChanInfoAsync(new ChanInfoRequest{ChanId = chanId});
         }
 
+        public async Task<SharedKeyResponse> DeriveSharedKey(string ephemeralPubkey)
+        {
+            return await SignClient.DeriveSharedKeyAsync(new SharedKeyRequest{
+                EphemeralPubkey = ByteString.CopyFrom(Convert.FromHexString(ephemeralPubkey))
+            });
+        }
         public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount)
         {
         //    var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
