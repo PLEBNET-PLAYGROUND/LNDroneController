@@ -5,9 +5,9 @@ EXPOSE 80
 EXPOSE 443
 
 # Copy csproj and restore as distinct layers
-COPY ./LNDroneController ./
-RUN dotnet restore LNDroneController.csproj
-RUN dotnet publish -c Release -o out
+COPY . ./
+RUN dotnet restore
+RUN dotnet publish LNDroneController/LNDroneController.csproj -c Release -o out
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:5.0 as lndronecontroller
