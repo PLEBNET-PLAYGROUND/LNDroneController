@@ -2,6 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageProjectUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</PackageProjectUrl>
+		<PackageId>LNDroneController.LND</PackageId>
+		<Version>0.1</Version>
+		<Authors>Richard Safier</Authors>
+		<PackageDescription>LNDroneController LND Implementation</PackageDescription>
+		<RepositoryUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</RepositoryUrl>
     </PropertyGroup>
 
   
