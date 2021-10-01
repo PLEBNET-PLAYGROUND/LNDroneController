@@ -6,6 +6,7 @@
         "Htlc",
         "Htlcs",
         "Lnrpc",
-        "Msat"
+        "Msat",
+        "Protobuf"
     ]
 }
