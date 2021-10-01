@@ -26,5 +26,5 @@ jobs:
         cd LNDroneController.LND
         dotnet pack --configuration Release
         dotnet nuget add source --username rsafier --password ${{ secrets.CR_PAT }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/plebnet-playground/index.json"
-        dotnet nuget delete "bin/Release/LNDroneController.LND.0.1.0.nupkg" --api-key ${{ secrets.CR_PAT }} --source "github"
+        dotnet nuget delete LNDroneController.LND 0.1.0 --api-key ${{ secrets.CR_PAT }} --source "github"
         dotnet nuget push "bin/Release/LNDroneController.LND.0.1.0.nupkg"  --api-key ${{ secrets.CR_PAT }} --source "github"
