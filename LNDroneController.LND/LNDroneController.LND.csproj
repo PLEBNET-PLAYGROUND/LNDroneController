@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageProjectUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</PackageProjectUrl>
 		<PackageId>LNDroneController.LND</PackageId>
-		<Version>0.1.1</Version>
+		<Version>0.1.$([System.DateTime]::UtcNow.ToString(yyyy-MM-dd-hhmm))</Version>
 		<Authors>Richard Safier</Authors>
 		<PackageDescription>LNDroneController LND Implementation</PackageDescription>
 		<RepositoryUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</RepositoryUrl>
