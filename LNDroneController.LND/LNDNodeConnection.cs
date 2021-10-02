@@ -34,40 +34,17 @@ namespace LNDroneController.LND
         public string ClearnetConnectString { get; private set; }
         public string OnionConnectString { get; private set; }
 
-        public void Start(string tlsCertFilePath, string macoroonFilePath, string host, string localIP = null)
+        public void StartWithFilePaths(string tlsCertFilePath, string macoroonFilePath, string host, string localIP = null)
         {
-            // Due to updated ECDSA generated tls.cert we need to let gprc know that
-            // we need to use that cipher suite otherwise there will be a handshake
-            // error when we communicate with the lnd rpc server.
-            System.Environment.SetEnvironmentVariable("GRPC_SSL_CIPHER_SUITES", "HIGH+ECDSA");
-            string connectionString = Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING");
-
-            var cert = System.IO.File.ReadAllText(tlsCertFilePath);
-
-            var httpClientHandler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true
-            };
-            var x509Cert = new X509Certificate2(tlsCertFilePath);
-            httpClientHandler.ClientCertificates.Add(x509Cert);
             byte[] macaroonBytes = System.IO.File.ReadAllBytes(macoroonFilePath);
             var macaroon = BitConverter.ToString(macaroonBytes).Replace("-", ""); // hex format stripped of "-" chars
+            var cert = System.IO.File.ReadAllText(tlsCertFilePath);
+            StartWithBase64(host, macaroon, host, localIP);
+        }
 
-            var credentials = CallCredentials.FromInterceptor((_, metadata) =>
-            {
-                metadata.Add(new Metadata.Entry("macaroon", macaroon));
-                return Task.CompletedTask;
-            });
-            gRPCChannel = GrpcChannel.ForAddress(
-                "https://" + host,
-                new GrpcChannelOptions
-                {
-                    DisposeHttpClient = true,
-                    HttpHandler = httpClientHandler,
-                    Credentials = ChannelCredentials.Create(new SslCredentials(), credentials),
-                    MaxReceiveMessageSize = 128000000
-                });
-
+        public void StartWithBase64(string tlsCertBase64, string macaroonBase64, string host, string localIP = null)
+        {
+            gRPCChannel = CreateGrpcConnection(host, tlsCertBase64, macaroonBase64);
             LightningClient = new Lnrpc.Lightning.LightningClient(gRPCChannel);
             RouterClient = new Routerrpc.Router.RouterClient(gRPCChannel);
             SignClient = new Signrpc.Signer.SignerClient(gRPCChannel);
@@ -80,6 +57,44 @@ namespace LNDroneController.LND
             {
                 ClearnetConnectString = $"{nodeInfo.IdentityPubkey}@{localIP}:9735";
             }
+        }
+
+        public GrpcChannel CreateGrpcConnection(string grpcEndpoint, string TLSCertBase64, string MacaroonBase64)
+        {
+            // Due to updated ECDSA generated tls.cert we need to let gprc know that
+            // we need to use that cipher suite otherwise there will be a handshake
+            // error when we communicate with the lnd rpc server.
+
+            System.Environment.SetEnvironmentVariable("GRPC_SSL_CIPHER_SUITES", "HIGH+ECDSA");
+            var httpClientHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true
+            };
+            var x509Cert = new X509Certificate2(Convert.FromBase64String(TLSCertBase64));
+
+            httpClientHandler.ClientCertificates.Add(x509Cert);
+            string macaroon;
+            
+                macaroon = Convert.FromBase64String(MacaroonBase64).ToHex();
+           
+
+            var credentials = CallCredentials.FromInterceptor((_, metadata) =>
+            {
+                metadata.Add(new Metadata.Entry("macaroon", macaroon));
+                return Task.CompletedTask;
+            });
+
+            var grpcChannel = GrpcChannel.ForAddress(
+                            grpcEndpoint,
+                            new GrpcChannelOptions
+                            {
+                                DisposeHttpClient = true,
+                                HttpHandler = httpClientHandler,
+                                Credentials = ChannelCredentials.Create(new SslCredentials(), credentials),
+                                MaxReceiveMessageSize = 128000000,
+                                MaxSendMessageSize = 128000000,
+                            });
+            return grpcChannel;
         }
 
         // public async Task<NodeInfo> GetNodeInfo(string remotePubkey, bool includeChannels = false )

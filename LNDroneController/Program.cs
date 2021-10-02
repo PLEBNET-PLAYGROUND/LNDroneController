@@ -38,7 +38,7 @@ namespace LNDroneController
                 nodeConnections.Add(nodeConnection);
                 if (!node.LocalIPPath.IsNullOrEmpty())
                     node.LocalIP = node.LocalIPPath.ReadAllText();
-                nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
+                nodeConnection.StartWithFilePaths(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
             LNDAutoPaymentEngine.ClusterNodes = nodeConnections;
 

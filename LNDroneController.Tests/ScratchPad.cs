@@ -48,7 +48,7 @@ namespace LNDroneController.Tests
                 };
                 var nodeConnection = new LNDNodeConnection();
                 NodeConnections.Add(nodeConnection);
-                nodeConnection.Start(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
+                nodeConnection.StartWithFilePaths(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
 
