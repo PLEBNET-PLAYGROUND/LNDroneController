@@ -27,13 +27,29 @@ namespace LNDroneController.LND
         private GrpcChannel gRPCChannel;
         private Lightning.LightningClient LightningClient;
         private Router.RouterClient RouterClient;
+        public Signer.SignerClient SignClient { get; set; }
 
-        public Signer.SignerClient SignClient { get; private set; }
-        public string LocalNodePubKey { get; private set; }
-        public string LocalAlias { get; private set; }
-        public string ClearnetConnectString { get; private set; }
-        public string OnionConnectString { get; private set; }
+        public string LocalNodePubKey { get; set; }
+        public string LocalAlias { get; set; }
+        public string ClearnetConnectString { get; set; }
+        public string OnionConnectString { get; set; }
 
+        public LNDNodeConnection()
+        {
+
+        }
+
+        public LNDNodeConnection(LNDSettings settings)
+        {
+            if (settings.MacaroonPath.IsNullOrEmpty())
+            {
+                StartWithBase64(settings.TLSCertBase64, settings.MacaroonBase64, settings.GrpcEndpoint);
+            }
+            else
+            {
+                StartWithFilePaths(settings.TLSCertBase64, settings.MacaroonPath, settings.GrpcEndpoint);
+            }
+        }
         public void StartWithFilePaths(string tlsCertFilePath, string macoroonFilePath, string host, string localIP = null)
         {
             byte[] macaroonBytes = System.IO.File.ReadAllBytes(macoroonFilePath);
@@ -74,9 +90,9 @@ namespace LNDroneController.LND
 
             httpClientHandler.ClientCertificates.Add(x509Cert);
             string macaroon;
-            
-                macaroon = Convert.FromBase64String(MacaroonBase64).ToHex();
-           
+
+            macaroon = Convert.FromBase64String(MacaroonBase64).ToHex();
+
 
             var credentials = CallCredentials.FromInterceptor((_, metadata) =>
             {
@@ -107,31 +123,32 @@ namespace LNDroneController.LND
 
         public async Task<ChannelEdge> GetChannelInfo(ulong chanId)
         {
-            return await LightningClient.GetChanInfoAsync(new ChanInfoRequest{ChanId = chanId});
+            return await LightningClient.GetChanInfoAsync(new ChanInfoRequest { ChanId = chanId });
         }
 
         public async Task<SharedKeyResponse> DeriveSharedKey(string ephemeralPubkey)
         {
-            return await SignClient.DeriveSharedKeyAsync(new SharedKeyRequest{
+            return await SignClient.DeriveSharedKeyAsync(new SharedKeyRequest
+            {
                 EphemeralPubkey = ByteString.CopyFrom(Convert.FromHexString(ephemeralPubkey))
             });
         }
         public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount)
         {
-        //    var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
+            //    var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
 
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
             var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash(randomBytes);
             var req = new SendPaymentRequest
-            {      
+            {
                 AllowSelfPayment = true,
                 Amt = amount,
                 LastHopPubkey = ByteString.CopyFrom(Convert.FromHexString(target.RemotePubkey)),
-                FeeLimitSat = (long)(amount*(1/200.0)),            
+                FeeLimitSat = (long)(amount * (1 / 200.0)),
                 TimeoutSeconds = 30,
-                NoInflightUpdates=true,
+                NoInflightUpdates = true,
                 Dest = ByteString.CopyFrom(Convert.FromHexString(LocalNodePubKey)), //self
                 PaymentHash = ByteString.CopyFrom(hash),
             };
@@ -177,10 +194,10 @@ namespace LNDroneController.LND
             var response = await LightningClient.ListChannelsAsync(new ListChannelsRequest { InactiveOnly = true });
             return response.Channels.ToList();
         }
-        
+
         public async Task<ListPeersResponse> ListPeers()
         {
-            return await LightningClient.ListPeersAsync(new ListPeersRequest{LatestError = true});
+            return await LightningClient.ListPeersAsync(new ListPeersRequest { LatestError = true });
         }
 
         public async Task TryReconnect()
@@ -188,7 +205,7 @@ namespace LNDroneController.LND
             var inactive = await ListInactiveChannels();
             foreach (var chan in inactive)
             {
-                var nodeInfo = await GetNodeInfo(chan.RemotePubkey,false);
+                var nodeInfo = await GetNodeInfo(chan.RemotePubkey, false);
                 foreach (var addr in nodeInfo.Node.Addresses)
                 {
                     try
@@ -203,9 +220,10 @@ namespace LNDroneController.LND
                             Timeout = 10L,
                         });
                     }
-                    catch (RpcException e) when (e.StatusCode == StatusCode.Unknown) {
+                    catch (RpcException e) when (e.StatusCode == StatusCode.Unknown)
+                    {
                         Debug.Print(e.Dump());
-                     }
+                    }
 
                 }
             }
