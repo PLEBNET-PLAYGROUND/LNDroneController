@@ -59,7 +59,7 @@ namespace LNDroneController.LND
             byte[] macaroonBytes = System.IO.File.ReadAllBytes(macoroonFilePath);
             var macaroon = BitConverter.ToString(macaroonBytes).Replace("-", ""); // hex format stripped of "-" chars
             var cert = System.IO.File.ReadAllText(tlsCertFilePath);
-            StartWithBase64(Convert.ToBase64String(cert.ToAsciiBytes()), macaroon, host, localIP);
+            StartWithBase64(Convert.ToBase64String(cert.ToAsciiBytes()), Convert.ToBase64String(Convert.FromHexString(macaroon)), host, localIP);
         }
 
         public void StartWithBase64(string tlsCertBase64, string macaroonBase64, string host, string localIP = null)
