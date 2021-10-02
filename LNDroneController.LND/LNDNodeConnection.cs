@@ -47,7 +47,7 @@ namespace LNDroneController.LND
             }
             else
             {
-                StartWithFilePaths(settings.TLSCertBase64, settings.MacaroonPath, settings.GrpcEndpoint);
+                StartWithFilePaths(settings.TLSCertPath, settings.MacaroonPath, settings.GrpcEndpoint);
             }
         }
         public void StartWithFilePaths(string tlsCertFilePath, string macoroonFilePath, string host, string localIP = null)
