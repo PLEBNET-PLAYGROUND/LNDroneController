@@ -40,5 +40,7 @@ namespace LNDroneController.LND
         /// Default Minimum Fee: 
         /// </summary>
         public long MinFeeSats { get; set; } = 10;
+
+        public string LocalIP { get; set; }
     }
 }

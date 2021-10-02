@@ -23,31 +23,35 @@ namespace LNDroneController.LND
 {
     public class LNDNodeConnection
     {
-        private static Random r = new Random();
-        private GrpcChannel gRPCChannel;
-        private Lightning.LightningClient LightningClient;
-        private Router.RouterClient RouterClient;
-        public Signer.SignerClient SignClient { get; set; }
+        private Random r = new Random();
+        public GrpcChannel gRPCChannel { get; internal set; }
+        public Lightning.LightningClient LightningClient { get; internal set; }
+        public Router.RouterClient RouterClient { get; internal set; }
+        public Signer.SignerClient SignClient { get; internal set; }
 
-        public string LocalNodePubKey { get; set; }
-        public string LocalAlias { get; set; }
-        public string ClearnetConnectString { get; set; }
-        public string OnionConnectString { get; set; }
+        public string LocalNodePubKey { get; internal set; }
+        public string LocalAlias { get; internal set; }
+        public string ClearnetConnectString { get; internal set; }
+        public string OnionConnectString { get; internal set; }
 
+        //Start with manual startup
         public LNDNodeConnection()
         {
 
         }
-
+        /// <summary>
+        /// Constructor auto-start
+        /// </summary>
+        /// <param name="settings">LND Configuration Settings</param>
         public LNDNodeConnection(LNDSettings settings)
         {
             if (settings.MacaroonPath.IsNullOrEmpty())
             {
-                StartWithBase64(settings.TLSCertBase64, settings.MacaroonBase64, settings.GrpcEndpoint);
+                StartWithBase64(settings.TLSCertBase64, settings.MacaroonBase64, settings.GrpcEndpoint, settings.LocalIP);
             }
             else
             {
-                StartWithFilePaths(settings.TLSCertPath, settings.MacaroonPath, settings.GrpcEndpoint);
+                StartWithFilePaths(settings.TLSCertPath, settings.MacaroonPath, settings.GrpcEndpoint, settings.LocalIP);
             }
         }
         public void StartWithFilePaths(string tlsCertFilePath, string macoroonFilePath, string host, string localIP = null)
