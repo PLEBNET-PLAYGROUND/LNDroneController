@@ -15,7 +15,7 @@ using ServiceStack;
 using ServiceStack.Text;
 using Lnrpc;
 using NuGet.Frameworks;
-
+using LNDroneController.Extentions;
 namespace LNDroneController.Tests
 {
     public class DroneTests

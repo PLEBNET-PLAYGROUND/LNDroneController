@@ -18,6 +18,7 @@ using ServiceStack.Text;
 using Lnrpc;
 using ServiceStack.Common;
 using System.Security.Cryptography;
+using LNDroneController.Extentions;
 
 namespace LNDroneController.Tests
 {
