@@ -460,7 +460,7 @@ namespace LNDroneController.LND
         {
             return await LightningClient.UpdateChannelPolicyAsync(policy);
         }
-        public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60)
+        public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60, Dictionary<ulong,byte[]> keySendPairs = null)
         {
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
@@ -475,6 +475,13 @@ namespace LNDroneController.LND
                 TimeoutSeconds = timeoutSeconds,
             };
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
+            if (keySendPairs != null)
+            {
+                foreach(var kvp in keySendPairs)
+                {
+                    payment.DestCustomRecords.Add(kvp.Key, ByteString.CopyFrom(kvp.Value));
+                }
+            }
             if (message != null)
                 payment.DestCustomRecords.Add(34349334, Google.Protobuf.ByteString.CopyFrom(Encoding.Default.GetBytes(message))); //message type
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
