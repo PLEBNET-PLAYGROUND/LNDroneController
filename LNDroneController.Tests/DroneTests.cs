@@ -37,7 +37,7 @@ namespace LNDroneController.Tests
                     LocalIP = (Environment.GetEnvironmentVariable("HOME") +
                                $"/plebnet-playground-cluster/volumes/lnd_datadir_{i}/localhostip".MapAbsolutePath())
                         .ReadAllText().Replace("\n", string.Empty),
-                    Host = $"playground-lnd-{i}:10009",
+                    Host = $"https://playground-lnd-{i}:10009",
                 };
                 var nodeConnection = new LNDNodeConnection();
                 NodeConnections.Add(nodeConnection);

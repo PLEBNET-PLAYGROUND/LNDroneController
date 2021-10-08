@@ -137,7 +137,7 @@ namespace LNDroneController.LND
                 EphemeralPubkey = ByteString.CopyFrom(Convert.FromHexString(ephemeralPubkey))
             });
         }
-        public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount)
+        public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount, int timeoutSeconds = 30, bool isAmp = false)
         {
             //    var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
 
@@ -147,11 +147,12 @@ namespace LNDroneController.LND
             var hash = sha256.ComputeHash(randomBytes);
             var req = new SendPaymentRequest
             {
+                Amp =isAmp,
                 AllowSelfPayment = true,
                 Amt = amount,
                 LastHopPubkey = ByteString.CopyFrom(Convert.FromHexString(target.RemotePubkey)),
-                FeeLimitSat = (long)(amount * (1 / 200.0)),
-                TimeoutSeconds = 30,
+                FeeLimitSat = (long)(amount * (1 / 200.0)) + 10,
+                TimeoutSeconds = timeoutSeconds,
                 NoInflightUpdates = true,
                 Dest = ByteString.CopyFrom(Convert.FromHexString(LocalNodePubKey)), //self
                 PaymentHash = ByteString.CopyFrom(hash),

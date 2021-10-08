@@ -45,12 +45,12 @@ namespace LNDroneController
             var cancellationTokenSources = new List<CancellationTokenSource>();
             var primeSet = new int[] { 53, 59, 61, 67, 71 };
 
-            // foreach (var node in nodeConnections)
-            // {
-            //     var cs = new CancellationTokenSource();
-            //     cancellationTokenSources.Add(cs);
-            //     var task = LNDAutoPaymentEngine.Start(node, TimeSpan.FromSeconds(primeSet[r.Next(0, 4)]), token: cs.Token);
-            // }
+            foreach (var node in nodeConnections)
+            {
+                var cs2 = new CancellationTokenSource();
+                cancellationTokenSources.Add(cs2);
+                var task2 = LNDAutoPaymentEngine.Start(node, TimeSpan.FromSeconds(primeSet[r.Next(0, 4)]), token: cs2.Token);
+            }
 
 
             var cs = new CancellationTokenSource();

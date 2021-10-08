@@ -22,8 +22,14 @@ namespace LNDroneController.LND
 {
     public static class LNDChannelLogic
     {
-        public static double MinLocalBalancePercentage {get;set;} = 0.2;
-        public static double MaxRemoteLocalBalancePercentage {get;set;} = 0.2;
+        public static double MinLocalBalancePercentage { get; set; } = 0.2;
+        public static double MaxRemoteLocalBalancePercentage { get; set; } = 0.2;
+
+        public static IEnumerable<T> Randomize<T>(this IEnumerable<T> source)
+        {
+            Random rnd = new Random();
+            return source.OrderBy((item) => rnd.Next());
+        }
 
     }
 }

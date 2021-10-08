@@ -35,26 +35,26 @@ namespace LNDroneController.LND
                         var payment = await connection.KeysendPayment(n.LocalNodePubKey, amount, (long)(10+ amount * (1 / 500.0)), null, 20); //2000 ppm max fee, 20second timeout
                         if (payment.FailureReason == Lnrpc.PaymentFailureReason.FailureReasonNone)
                         {
-                            $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sats sent at {Math.Ceiling(payment.FeeSat/(decimal)amount*1000000)} ppm rate in {payment.Htlcs.Last(x=>x.Status == Lnrpc.HTLCAttempt.Types.HTLCStatus.Succeeded).Route.Hops.Count} hops to {n.LocalAlias} ({n.LocalNodePubKey})".Print();
+                            $"[AutoPayment]: {DateTime.UtcNow} - {connection.LocalAlias} - {amount} sats sent at {Math.Ceiling(payment.FeeSat/(decimal)amount*1000000)} ppm rate in {payment.Htlcs.Last(x=>x.Status == Lnrpc.HTLCAttempt.Types.HTLCStatus.Succeeded).Route.Hops.Count} hops to {n.LocalAlias} ({n.LocalNodePubKey})".Print();
                         }
                         else
                         {
                             var chanId = payment.Htlcs.LastOrDefault()?.Route.Hops.LastOrDefault()?.ChanId;
                             if (chanId.HasValue)
                             {
-                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.FailureReason} to {n.LocalAlias}".Print();
+                                $"[AutoPayment]: {DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {payment.FailureReason} to {n.LocalAlias}".Print();
                             }
                             else
                             {
                                 
-                                $"{DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {n.LocalAlias} - {payment.Status}".Print();
+                                $"[AutoPayment]: {DateTime.UtcNow} - {connection.LocalAlias} - {amount} sat failed to send: {n.LocalAlias} - {payment.Status}".Print();
                             }
                            
                         }
                     }
                     catch (Exception e)
                     {
-                        $"{DateTime.UtcNow} - {e}".Print();
+                        $"[AutoPayment]: {DateTime.UtcNow} - {e}".Print();
                         //suck up errors
                     }
                 }, 4, token);
