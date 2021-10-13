@@ -43,7 +43,7 @@ namespace LNDroneController
             LNDAutoPaymentEngine.ClusterNodes = nodeConnections;
 
             var cancellationTokenSources = new List<CancellationTokenSource>();
-            var primeSet = new int[] { 53, 59, 61, 67, 71 };
+            var primeSet = new int[] { 	131,	137	,139,	149	,151 };
 
             foreach (var node in nodeConnections)
             {
