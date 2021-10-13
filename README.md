@@ -1,5 +1,6 @@
 ﻿## LNDroneController - C# Lightning node automation framework
 [![Deploy Nuget Package](https://github.com/PLEBNET-PLAYGROUND/LNDroneController/actions/workflows/nuget-package-deploy.yml/badge.svg)](https://github.com/PLEBNET-PLAYGROUND/LNDroneController/actions/workflows/nuget-package-deploy.yml)
+[![Build Docker Image & Push](https://github.com/PLEBNET-PLAYGROUND/LNDroneController/actions/workflows/docker-build.yml/badge.svg)](https://github.com/PLEBNET-PLAYGROUND/LNDroneController/actions/workflows/docker-build.yml)
 #### A Plebnet Playground Project
 ---
 - Control a fleet of nodes automatically. 
