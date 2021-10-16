@@ -9,6 +9,7 @@
 		<Authors>Richard Safier</Authors>
 		<PackageDescription>LNDroneController LND Implementation</PackageDescription>
 		<RepositoryUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>		
     </PropertyGroup>
 
   
