@@ -28,7 +28,7 @@ namespace LNDroneController.LND
         public Lightning.LightningClient LightningClient { get; internal set; }
         public Router.RouterClient RouterClient { get; internal set; }
         public Signer.SignerClient SignClient { get; internal set; }
-
+        public State.StateClient StateClient { get; internal set; }  
         public string LocalNodePubKey { get; internal set; }
         public string LocalAlias { get; internal set; }
         public string ClearnetConnectString { get; internal set; }
@@ -68,6 +68,7 @@ namespace LNDroneController.LND
             LightningClient = new Lnrpc.Lightning.LightningClient(gRPCChannel);
             RouterClient = new Routerrpc.Router.RouterClient(gRPCChannel);
             SignClient = new Signrpc.Signer.SignerClient(gRPCChannel);
+            StateClient = new State.StateClient(gRPCChannel);
             var nodeInfo = LightningClient.GetInfo(new GetInfoRequest());
             LocalNodePubKey = nodeInfo.IdentityPubkey;
             LocalAlias = nodeInfo.Alias;
