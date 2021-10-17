@@ -43,6 +43,8 @@
     <Protobuf Include="Grpc\watchtowerrpc\watchtower.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
     <Protobuf Include="Grpc\routerrpc\router.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
     <Protobuf Include="Grpc\lightning.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
+    <Protobuf Include="Grpc\stateservice.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
+	<Protobuf Include="Grpc\walletunlocker.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
   </ItemGroup>
 
 </Project>

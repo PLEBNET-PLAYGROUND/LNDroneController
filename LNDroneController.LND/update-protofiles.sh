@@ -1,6 +1,6 @@
  #! /bin/bash
 wget -O ./Grpc/lightning.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/lightning.proto
-wget -O ./Grpc/signrpc/walletunlocker.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/walletunlocker.proto
+wget -O ./Grpc/walletunlocker.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/walletunlocker.proto
 wget -O ./Grpc/chainrpc/chainnotifier.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/chainrpc/chainnotifier.proto
 wget -O ./Grpc/invoicesrpc/invoices.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/invoicesrpc/invoices.proto
 wget -O ./Grpc/routerrpc/router.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/routerrpc/router.proto
@@ -10,3 +10,4 @@ wget -O ./Grpc/signrpc/signer.proto https://raw.githubusercontent.com/lightningn
 wget -O ./Grpc/walletrpc/walletkit.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/walletrpc/walletkit.proto
 wget -O ./Grpc/autopilotrpc/autopilot.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/autopilotrpc/autopilot.proto
 wget -O ./Grpc/verrpc/verrpc.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/verrpc/verrpc.proto
+wget -O ./Grpc/stateservice.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/stateservice.proto
