@@ -53,9 +53,9 @@ namespace LNDroneController
             }
 
 
-            var cs = new CancellationTokenSource();
-            cancellationTokenSources.Add(cs);
-            var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
+            // var cs = new CancellationTokenSource();
+            // cancellationTokenSources.Add(cs);
+            // var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
 
             // Log.Logger = new LoggerConfiguration()
             //     .WriteTo.Console()

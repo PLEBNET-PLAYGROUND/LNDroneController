@@ -39,7 +39,7 @@ namespace LNDroneController.LND
 
                         // }
                         await set.remoteTargets.Randomize().ParallelForEachAsync(async target => {
-                            var result = await node.Rebalance(set.localSources.ToList(),target,amount, 5, false);
+                            var result = await node.Rebalance(set.localSources.Randomize().ToList(),target,amount, 5, false);
                          // $"{node.LocalAlias} -d {set.localSources.Select(x=>x.ChanId).ToJson()} to {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status}".Print();
                           $"[Balancer]: {node.LocalAlias} - {target.ChanId} Local Balance: {target.LocalBalance/(double)1000000}/{target.Capacity/(double)1000000}MSat {result.Htlcs.LastOrDefault()?.Status} in {result.Htlcs.LastOrDefault()?.Route.Hops.Count()} hops".Print();
                         }, 2);
@@ -47,7 +47,7 @@ namespace LNDroneController.LND
                 }
                 $"[Balancer]: LNClusterRebalancer waiting for next loop...".Print();
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromSeconds(60*5));
             }
             return;
         }
