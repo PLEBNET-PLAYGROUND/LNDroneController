@@ -12,18 +12,20 @@ using System.Linq;
 using LNDroneController.Types;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Lnrpc;
 // using Microsoft.Extensions.Hosting;
 // using Microsoft.AspNetCore.Hosting;
 // using Serilog;
 // using Microsoft.OpenApi.Models;
 // using Microsoft.AspNetCore.Builder;
-
+using ServiceStack.Text;
+using ServiceStack;
 namespace LNDroneController
 {
     public class Program
     {
         private static Random r = new Random();
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             if (args.Length < 1)
             {
@@ -53,16 +55,16 @@ namespace LNDroneController
             }
 
 
-            // var cs = new CancellationTokenSource();
-            // cancellationTokenSources.Add(cs);
-            // var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
+            var cs = new CancellationTokenSource();
+            cancellationTokenSources.Add(cs);
+            var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
 
             // Log.Logger = new LoggerConfiguration()
             //     .WriteTo.Console()
             //     .WriteTo.Seq("http://localhost:5341")
             //     .CreateLogger();
 
-
+          
             Console.WriteLine("Press ANY key to stop process");
             Console.ReadKey();
             Console.WriteLine("Sending cancel signals....");
@@ -71,6 +73,8 @@ namespace LNDroneController
                 token.Cancel();
             }
         }
+
+       
 
         // public static IHostBuilder CreateHostBuilder(string[] args) =>
         // Host.CreateDefaultBuilder(args)
