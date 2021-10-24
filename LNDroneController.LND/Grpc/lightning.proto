@@ -557,6 +557,47 @@ service Lightning {
     */
     rpc RegisterRPCMiddleware (stream RPCMiddlewareResponse)
         returns (stream RPCMiddlewareRequest);
+
+    /* lncli: `sendcustom`
+    SendCustomMessage sends a custom peer message.
+    */
+    rpc SendCustomMessage (SendCustomMessageRequest)
+        returns (SendCustomMessageResponse);
+
+    /* lncli: `subscribecustom`
+    SubscribeCustomMessages subscribes to a stream of incoming custom peer
+    messages.
+    */
+    rpc SubscribeCustomMessages (SubscribeCustomMessagesRequest)
+        returns (stream CustomMessage);
+}
+
+message SubscribeCustomMessagesRequest {
+}
+
+message CustomMessage {
+    // Peer from which the message originates
+    bytes peer = 1;
+
+    // Message type. This value will be in the custom range (>= 32768).
+    uint32 type = 2;
+
+    // Raw message data
+    bytes data = 3;
+}
+
+message SendCustomMessageRequest {
+    // Peer to send the message to
+    bytes peer = 1;
+
+    // Message type. This value needs to be in the custom range (>= 32768).
+    uint32 type = 2;
+
+    // Raw message data.
+    bytes data = 3;
+}
+
+message SendCustomMessageResponse {
 }
 
 message Utxo {
@@ -834,6 +875,9 @@ message ChannelAcceptRequest {
     // A bit-field which the initiator uses to specify proposed channel
     // behavior.
     uint32 channel_flags = 13;
+
+    // The commitment type the initiator wishes to use for the proposed channel.
+    CommitmentType commitment_type = 14;
 }
 
 message ChannelAcceptResponse {
@@ -1188,6 +1232,15 @@ enum CommitmentType {
     been broadcast.
     */
     ANCHORS = 3;
+
+    /*
+    A channel that uses a commitment type that builds upon the anchors
+    commitment format, but in addition requires a CLTV clause to spend outputs
+    paying to the channel initiator. This is intended for use on leased channels
+    to guarantee that the channel initiator has no incentives to close a leased
+    channel before its maturity date.
+    */
+    SCRIPT_ENFORCED_LEASE = 4;
 }
 
 message ChannelConstraints {
