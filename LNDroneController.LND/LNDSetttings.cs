@@ -42,5 +42,10 @@ namespace LNDroneController.LND
         public long MinFeeSats { get; set; } = 10;
 
         public string LocalIP { get; set; }
+
+        /// <summary>
+        /// Used in pooling to order nodes if one perfers particular nodes as 'primaries'. lower is most preferred
+        /// </summary>
+        public int? Priority { get; set; }
     }
 }

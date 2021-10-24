@@ -21,18 +21,26 @@ using Signrpc;
 
 namespace LNDroneController.LND
 {
-    public class LNDNodeConnection
+    public class LNDNodeConnection : IDisposable
     {
         private Random r = new Random();
         public GrpcChannel gRPCChannel { get; internal set; }
         public Lightning.LightningClient LightningClient { get; internal set; }
         public Router.RouterClient RouterClient { get; internal set; }
         public Signer.SignerClient SignClient { get; internal set; }
-        public State.StateClient StateClient { get; internal set; }  
+        public State.StateClient StateClient { get; internal set; }
         public string LocalNodePubKey { get; internal set; }
         public string LocalAlias { get; internal set; }
         public string ClearnetConnectString { get; internal set; }
         public string OnionConnectString { get; internal set; }
+
+        public bool IsReady
+        {
+            get
+            {
+                return CheckRPCReady();
+            }
+        }
 
         //Start with manual startup
         public LNDNodeConnection()
@@ -78,6 +86,11 @@ namespace LNDroneController.LND
             {
                 ClearnetConnectString = $"{nodeInfo.IdentityPubkey}@{localIP}:9735";
             }
+        }
+
+        public void Dispose()
+        {
+            gRPCChannel.Dispose();
         }
 
         public GrpcChannel CreateGrpcConnection(string grpcEndpoint, string TLSCertBase64, string MacaroonBase64)
@@ -138,6 +151,23 @@ namespace LNDroneController.LND
                 EphemeralPubkey = ByteString.CopyFrom(Convert.FromHexString(ephemeralPubkey))
             });
         }
+
+        public bool CheckRPCReady()
+        {
+            try
+            {
+                var res = StateClient.GetState(new GetStateRequest());
+                return res.State == WalletState.RpcActive;
+            }
+            catch (RpcException e)
+            {
+            }
+            catch (Exception e)
+            {
+            }
+            return false;
+        }
+
         public async Task<Payment> Rebalance(IList<Channel> sources, Channel target, long amount, int timeoutSeconds = 30, bool isAmp = false)
         {
             //    var paymentReq = await LightningClient.AddInvoiceAsync(new Invoice{ Value = amount, Expiry = 60, Memo = "Rebalance..."});
@@ -148,7 +178,7 @@ namespace LNDroneController.LND
             var hash = sha256.ComputeHash(randomBytes);
             var req = new SendPaymentRequest
             {
-                Amp =isAmp,
+                Amp = isAmp,
                 AllowSelfPayment = true,
                 Amt = amount,
                 LastHopPubkey = ByteString.CopyFrom(Convert.FromHexString(target.RemotePubkey)),
@@ -462,7 +492,7 @@ namespace LNDroneController.LND
         {
             return await LightningClient.UpdateChannelPolicyAsync(policy);
         }
-        public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60, Dictionary<ulong,byte[]> keySendPairs = null)
+        public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60, Dictionary<ulong, byte[]> keySendPairs = null)
         {
             var randomBytes = new byte[32];
             r.NextBytes(randomBytes);
@@ -479,7 +509,7 @@ namespace LNDroneController.LND
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
             if (keySendPairs != null)
             {
-                foreach(var kvp in keySendPairs)
+                foreach (var kvp in keySendPairs)
                 {
                     payment.DestCustomRecords.Add(kvp.Key, ByteString.CopyFrom(kvp.Value));
                 }
