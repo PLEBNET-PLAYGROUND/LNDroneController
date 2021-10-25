@@ -285,7 +285,7 @@ namespace LNDroneController.Tests
                     Memo = "Pay me 10 sats",
                 });
                 invoice.PrintDump();
-                var payInvoice = await NodeConnections[2].PayPaymentRequest(invoice.PaymentRequest);
+                var payInvoice = await NodeConnections[2].PayPaymentRequest(invoice.PaymentRequest,100);
                 payInvoice.PrintDump();
                 var checkStatus = await NodeConnections[0].CheckInvoiceStatus(new PaymentHash
                 {
