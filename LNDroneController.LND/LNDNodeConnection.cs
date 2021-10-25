@@ -579,12 +579,13 @@ namespace LNDroneController.LND
             return await LightningClient.AddInvoiceAsync(invoice);
         }
 
-        public async Task<Payment> PayPaymentRequest(string invoicePaymentRequest, long maxFeeRateSats)
+        public async Task<Payment> PayPaymentRequest(string invoicePaymentRequest, long maxFeeRateSats = 10, int timeOutSeconds = 20)
         {
             var payment = new SendPaymentRequest
             {
                 PaymentRequest = invoicePaymentRequest,
-                FeeLimitSat = maxFeeRateSats
+                FeeLimitSat = maxFeeRateSats,
+                TimeoutSeconds = timeOutSeconds,
             };
             var streamingCallResponse = RouterClient.SendPaymentV2(payment);
             Payment paymentResponse = null;
