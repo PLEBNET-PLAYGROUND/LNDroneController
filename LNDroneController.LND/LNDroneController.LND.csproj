@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageProjectUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</PackageProjectUrl>
 		<PackageId>LNDroneController.LND</PackageId>
@@ -14,12 +14,12 @@
 
   
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.18.0" />
-    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.39.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.39.0" />
-    <PackageReference Include="Grpc.Net.Common" Version="2.39.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.19.1" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.40.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.40.0" />
+    <PackageReference Include="Grpc.Net.Common" Version="2.40.0" />
         
-    <PackageReference Include="Grpc.Tools" Version="2.40.0"> 
+    <PackageReference Include="Grpc.Tools" Version="2.42.0"> 
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -27,8 +27,8 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     
     <PackageReference Include="Microsoft.NETCore.Targets" Version="5.0.0" />
-    <PackageReference Include="ServiceStack.Text" Version="5.12.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" /> 
+    <PackageReference Include="ServiceStack.Text" Version="5.13.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" /> 
   </ItemGroup>
  
   
