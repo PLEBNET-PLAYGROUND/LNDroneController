@@ -20,6 +20,8 @@ using Lnrpc;
 // using Microsoft.AspNetCore.Builder;
 using ServiceStack.Text;
 using ServiceStack;
+using System.Diagnostics;
+
 namespace LNDroneController
 {
     public class Program
@@ -45,7 +47,7 @@ namespace LNDroneController
             LNDAutoPaymentEngine.ClusterNodes = nodeConnections;
 
             var cancellationTokenSources = new List<CancellationTokenSource>();
-            var primeSet = new int[] { 	131,	137	,139,	149	,151 };
+            var primeSet = new int[] { 131, 137, 139, 149, 151 };
 
             foreach (var node in nodeConnections)
             {
@@ -57,14 +59,14 @@ namespace LNDroneController
 
             var cs = new CancellationTokenSource();
             cancellationTokenSources.Add(cs);
-            var task = LNDClusterBalancer.Start(nodeConnections,cs.Token);
+            var task = LNDClusterBalancer.Start(nodeConnections, cs.Token);
 
             // Log.Logger = new LoggerConfiguration()
             //     .WriteTo.Console()
             //     .WriteTo.Seq("http://localhost:5341")
             //     .CreateLogger();
 
-          
+
             Console.WriteLine("Press ANY key to stop process");
             Console.ReadKey();
             Console.WriteLine("Sending cancel signals....");
@@ -74,7 +76,7 @@ namespace LNDroneController
             }
         }
 
-       
+
 
         // public static IHostBuilder CreateHostBuilder(string[] args) =>
         // Host.CreateDefaultBuilder(args)
