@@ -19,6 +19,7 @@ using Lnrpc;
 using ServiceStack.Common;
 using System.Security.Cryptography;
 using LNDroneController.Extentions;
+using NBitcoin;
 
 namespace LNDroneController.Tests
 {
@@ -52,6 +53,22 @@ namespace LNDroneController.Tests
                 nodeConnection.StartWithFilePaths(node.TlsCertFilePath, node.MacaroonFilePath, node.Host, node.LocalIP);
             }
         }
+
+        [Ignore("BTC RCP Tests")]
+        [Test]
+        public async Task BTCRPC()
+        {
+            var nc = new System.Net.NetworkCredential("bitcoin", "bitcoin");
+            var rpc = new NBitcoin.RPC.RPCClient(nc, "http://54.175.33.10:38332", NBitcoin.Bitcoin.Instance.Signet);
+            var result = rpc.GetBlockchainInfo();
+            result.PrintDump();
+            var address = rpc.GetNewAddress(new NBitcoin.RPC.GetNewAddressRequest { AddressType = NBitcoin.RPC.AddressType.Bech32 });
+            var spend = rpc.SendToAddress(address, Money.Coins(0.01m),new NBitcoin.RPC.SendToAddressParameters {FeeRate= new FeeRate(10m) });
+            var mempool = rpc.GetMemPool();
+            spend.PrintDump();
+        }
+
+         
 
         [Test]
         public async Task UpdateChannelPolicy()
