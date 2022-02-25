@@ -138,7 +138,16 @@ namespace LNDroneController.Tests
                         foreach (var c in channels)
                         {
                             var pubkey = c.RemotePubkey;
-                            var alias = await node.GetNodeAliasFromPubKey(pubkey);
+                            var alias = string.Empty;
+                            try
+                            {
+                                 alias = await node.GetNodeAliasFromPubKey(pubkey);
+                            }
+                            catch (Exception e)
+                            {
+                            }
+
+                           
                             $"\t{alias} - ChanId: {c.ChanId}".Print();
                         }
                         //channels.PrintDump();
