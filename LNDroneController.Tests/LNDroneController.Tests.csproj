@@ -8,15 +8,18 @@
 
     <ItemGroup>
         <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
-        <PackageReference Include="NBitcoin" Version="7.0.5" />
+        <PackageReference Include="BouncyCastle" Version="1.8.9" />
+        <PackageReference Include="EndianBinaryIO" Version="1.1.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+        <PackageReference Include="NBitcoin" Version="7.0.6" />
         <PackageReference Include="NUnit" Version="3.13.2" />
-        <PackageReference Include="NUnit3TestAdapter" Version="4.1.0" />
-        <PackageReference Include="coverlet.collector" Version="3.1.0">
+        <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+        <PackageReference Include="coverlet.collector" Version="3.1.2">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="ServiceStack.Text" Version="5.13.0" />
+        <PackageReference Include="ServiceStack.Text" Version="6.0.2" />
+        <PackageReference Include="Waher.Security.ChaChaPoly" Version="1.0.1" />
     </ItemGroup>
 
     <ItemGroup>

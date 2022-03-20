@@ -15,9 +15,9 @@ namespace LNDroneController.LND
     public class LNDSimpleHtlcInterceptorHandler
     {
         public LNDNodeConnection Node { get; }
-        public event Func<ForwardHtlcInterceptRequest,ForwardHtlcInterceptResponse> OnIntercept;
+        public event Func<ForwardHtlcInterceptRequest,Task<ForwardHtlcInterceptResponse>> OnIntercept;
 
-        public LNDSimpleHtlcInterceptorHandler(LNDNodeConnection connection, Func<ForwardHtlcInterceptRequest, ForwardHtlcInterceptResponse> interceptLogic = null)
+        public LNDSimpleHtlcInterceptorHandler(LNDNodeConnection connection, Func<ForwardHtlcInterceptRequest, Task<ForwardHtlcInterceptResponse>> interceptLogic = null)
         {
             Node = connection;
             Task.Factory.StartNew(AttachInterceptor);
@@ -26,11 +26,11 @@ namespace LNDroneController.LND
                 OnIntercept = (data) =>
                 {
                     Debug.Print(data.Dump());
-                    return new ForwardHtlcInterceptResponse
+                    return Task.FromResult(new ForwardHtlcInterceptResponse
                     {
                         Action = ResolveHoldForwardAction.Resume,
                         IncomingCircuitKey = data.IncomingCircuitKey,
-                    };
+                    });
                 };
             }
             else
@@ -47,7 +47,7 @@ namespace LNDroneController.LND
                 {
                     var message = streamingEvents.ResponseStream.Current;
                     var result = OnIntercept(message);
-                    await streamingEvents.RequestStream.WriteAsync(result);
+                    await streamingEvents.RequestStream.WriteAsync(await result);
                 }
             }
         }
