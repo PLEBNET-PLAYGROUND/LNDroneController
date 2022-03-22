@@ -23,7 +23,7 @@ namespace LNDroneController.Tests
                     cycleCount++;
                     var randomItem = l[r.Next(randomMax)];
                     //find nodes not in existing list, not self, and not any existing channel
-                    if (!response.Contains(randomItem) )
+                    if (!response.Contains(randomItem))
                     {
                         found = true;
                         response.Add(randomItem);
@@ -35,5 +35,29 @@ namespace LNDroneController.Tests
 
             return response;
         }
+
+        public static byte[] HexToBytes(this string data)
+        {
+            return Convert.FromHexString(data);
+        }
+        //public static byte[] TrimZeros(this byte[] data)
+        //{
+        //    int trimOffset = 0;
+        //    for (int i = 0; i < data.Length; i++)
+        //    {
+        //        if (data[i] == 0)
+        //        {
+        //            trimOffset++;
+        //        } 
+        //        else
+        //        {
+        //            break;
+        //        }
+        //    }
+        //    return data[trimOffset..];
+        //}
+
+       
+       
     }
 }

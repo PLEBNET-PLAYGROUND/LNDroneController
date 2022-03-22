@@ -1,36 +1,14 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Dasync.Collections;
-using Google.Protobuf;
-using Grpc.Core;
 using NUnit.Framework;
-using LNDroneController;
-using LNDroneController.Types;
 using LNDroneController.LND;
 using ServiceStack;
 using ServiceStack.Text;
-using Lnrpc;
-using ServiceStack.Common;
-using System.Security.Cryptography;
-using LNDroneController.Extentions;
 using Routerrpc;
-//using System.Security.Cryptography;
-using Waher.Security.ChaChaPoly;
-using System.Buffers.Binary;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Math.EC;
-using Kermalis.EndianBinaryIO;
-using NBitcoin;
-using NBitcoin.DataEncoders;
 
 namespace LNDroneController.Tests
 {
@@ -64,23 +42,19 @@ namespace LNDroneController.Tests
             var interceptor = new LNDSimpleHtlcInterceptorHandler(Carol, DoSomething);
             await Task.Delay(1000 * 10000);
         }
- 
-        [Test]
-        public async Task DecodeOnionBlob()
-        {
-            var blob = File.ReadAllText("OnionBlob.json").FromJson<byte[]>();
-            var decoder = new OnionBlobDecoder(Alice, blob);
-            await decoder.Decode();
-        }
-
-
+      
         private async Task<ForwardHtlcInterceptResponse> DoSomething(ForwardHtlcInterceptRequest data)
         {
             Debug.Print(data.Dump());
             var onionBlob = data.OnionBlob.ToByteArray();
-            var decoder = new OnionBlobDecoder(Alice, onionBlob);
-            await decoder.Decode();
-            decoder.PrintDump();
+            var decoder = new OnionBlob( onionBlob);
+            var sharedSecret = (await Alice.DeriveSharedKey(decoder.EphemeralPublicKey.ToHex())).SharedKey.ToByteArray();
+            var x = decoder.Peel(sharedSecret,null,data.PaymentHash.ToByteArray());
+            
+            Debug.Print(x.hopPayload.Dump());
+            x.PrintDump();
+            //await decoder.Decode();
+            //decoder.PrintDump();
 
             return new ForwardHtlcInterceptResponse
             {
@@ -89,89 +63,6 @@ namespace LNDroneController.Tests
             };
         }
     }
-
-    public class OnionBlobDecoder
-    {
-        public LNDNodeConnection Node { get; private set; }
-        public byte Version { get; private set; }
-        public byte[] SessionKey { get; private set; }
-        public byte[] Payload { get; private set; }
-        public byte[] HMAC { get; private set; }
-        public byte[] ComputedHMAC { get; private set; }
-
-        //Derived stuff
-        public byte[] SharedKey { get; private set; }
-        public byte[] DecodedPayload { get; private set; }
-
-        public OnionBlobDecoder(LNDNodeConnection decoderNode, byte[] onionBlob)
-        {
-            Node = decoderNode;
-            Version = onionBlob[0];
-            SessionKey = onionBlob[1..34];
-            Payload = onionBlob[33..1333];
-            HMAC = onionBlob[1333..1365];
-        }
-
-        private static readonly byte[] Rho = { 0x72, 0x68, 0x6F };
-        private static readonly byte[] Mu = { 0x6d, 0x75 };
-        private static readonly byte[] Nonce = new byte[12];
-
-        public async Task Decode()
-        {
-
-            var stream = new MemoryStream();
-            var writer = new EndianBinaryWriter(stream, endianness: Endianness.LittleEndian);
-            writer.Write(SessionKey);
-            var swappedSessionKey = stream.ToArray();
-            var sharedKeyResponseSwap = await Node.DeriveSharedKey(swappedSessionKey.ToHex());
-            var SharedKeySwap = sharedKeyResponseSwap.SharedKey.ToByteArray();
-            var sharedKeyResponse = await Node.DeriveSharedKey(SessionKey.ToHex());
-            SharedKey = sharedKeyResponse.SharedKey.ToByteArray();
-            var muKey = GenerateKey(Mu, SharedKey);
-            var hmac = HMAC;
-            var computedHMAC = CalculateMac(muKey, Payload);
-
-
-            var rhoKey = GenerateKey(Rho, SharedKey);
-            var chaChaDecoder = new ChaCha20(SharedKey, 0, Nonce);
-            var xordata = chaChaDecoder.EncryptOrDecrypt(rhoKey);
-            var deobsucated = Xor(Payload, rhoKey);
-
-
-            (ComputedHMAC).PrintDump();
-        }
-
-        private byte[] GenerateKey(byte[] key, byte[] sharedSecret)
-        {
-            Hmac.Key = key;
-            return Hmac.ComputeHash(sharedSecret);
-        }
-
-
-        private static readonly HMACSHA256 Hmac = new HMACSHA256();
-
-        private byte[] CalculateMac(byte[] key, byte[] data)
-        {
-            Hmac.Key = key;
-            return Hmac.ComputeHash(data);
-        }
-
-        private byte[] Xor(byte[] target, byte[] xorData)
-        {
-            if (xorData.Length > target.Length)
-            {
-                throw new ArgumentException($"{nameof(target)}.Length needs to be >= {nameof(xorData)}.Length");
-            }
-
-            for (int i = 0; i < xorData.Length; i++)
-            {
-                target[i] = (byte)(target[i] ^ xorData[i]);
-            }
-
-            return target;
-        }
-    }
-
 
     public class ECKeyPair : IComparable<ECKeyPair>
     {

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
@@ -25,6 +25,12 @@
     <ItemGroup>
       <ProjectReference Include="..\LNDroneController\LNDroneController.csproj" />
        <ProjectReference Include="..\LNDroneController.LND\LNDroneController.LND.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="BigSizeTestVectors.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 

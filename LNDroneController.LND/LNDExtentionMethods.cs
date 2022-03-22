@@ -12,9 +12,13 @@ using ServiceStack.Text;
 
 namespace LNDroneController.Extentions
 {
+
     public static class LNDExtensions
     {
         private static Random r = new Random();
+
+      
+
         public static async Task<List<LNDNodeConnection>> GetNewRandomNodes(this List<LNDNodeConnection> nodes, LNDNodeConnection baseNode, int count, int maxCycleCount = 1000)
         {
             var response = new List<LNDNodeConnection>();
