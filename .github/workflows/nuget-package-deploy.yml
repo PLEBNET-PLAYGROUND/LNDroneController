@@ -34,5 +34,5 @@ jobs:
         cd LNBolt
         dotnet pack --configuration Release
         cd bin/Release/
-        package=$(ls LNTool.*.nupkg)
+        package=$(ls LNBolt.*.nupkg)
         dotnet nuget push $package  --api-key ${{ secrets.NUGET }} --source https://api.nuget.org/v3/index.json
