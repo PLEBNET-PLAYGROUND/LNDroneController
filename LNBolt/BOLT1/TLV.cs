@@ -1,11 +1,10 @@
 ﻿using ServiceStack;
 using System.Linq;
 
-namespace LNDroneController.LND
+namespace LNBolt
 {
     public class TLV
     {
-
         public ulong Type { get; set; }
         public byte[] Value { get; set; }
         public int TLVSize
@@ -15,8 +14,6 @@ namespace LNDroneController.LND
                 var typeSize = new BigSize(Type).Length;
                 var lengthSize = new BigSize((ulong)DataSize).Length;
                 return typeSize + lengthSize + DataSize;
-                //or
-                //return this.ToEncoding().Length;
             }
         }
         public int DataSize
@@ -32,7 +29,6 @@ namespace LNDroneController.LND
             Type = type;
             Value = value;
         }
-
 
         public byte[] ToEncoding()
         {

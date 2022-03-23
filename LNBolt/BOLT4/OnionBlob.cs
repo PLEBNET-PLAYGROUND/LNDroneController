@@ -7,7 +7,7 @@ using Kermalis.EndianBinaryIO;
 using System.Collections.Generic;
 using ServiceStack.Text;
 using System.Security.Cryptography;
-namespace LNDroneController.LND
+namespace LNBolt
 {
     public class OnionBlob
     {
@@ -27,7 +27,13 @@ namespace LNDroneController.LND
         private static readonly int ONION_PACKET_LENGTH = 1300;
         private static readonly int HMAC_LENGTH = 32;
 
-        public OnionBlob() { }
+        public OnionBlob(byte version, byte[] ephemeralPublicKey, byte[] hopPayloads, byte[] nextHmac)
+        {
+            Version = version;
+            EphemeralPublicKey = ephemeralPublicKey;
+            HopPayloads = hopPayloads;
+            NextHmac = nextHmac;
+        }
         public OnionBlob(byte[] rawOnionBlob)
         {
             Version = rawOnionBlob[0];
@@ -36,8 +42,8 @@ namespace LNDroneController.LND
             NextHmac = rawOnionBlob[1334..1366];
         }
 
-       
-        public static OnionBlob ConstructOnion(List<byte[]> sharedSecrets, List<HopPayload> payloads, byte[] firstHopPublicKey, byte[] associatedData = null)
+
+        public static OnionBlob ConstructOnion(List<byte[]> sharedSecrets, List<HopPayload> payloads, byte[] firstHopPublicKey, byte[]? associatedData = null)
         {
             var nextHmac = new byte[HMAC_LENGTH];
             var filler = GenerateFiller(sharedSecrets, payloads);
@@ -49,8 +55,8 @@ namespace LNDroneController.LND
                 Debug.Print("Onion round {i}");
                 var currentSharedSecret = sharedSecrets[i];
                 var currentPayload = payloads[i];
-                var rhoKey = LNDTools.GenerateRhoKey(currentSharedSecret);
-                var muKey = LNDTools.GenerateMuKey(currentSharedSecret);
+                var rhoKey = LNTools.GenerateRhoKey(currentSharedSecret);
+                var muKey = LNTools.GenerateMuKey(currentSharedSecret);
 
                 var shiftSize = currentPayload.SphinxSize + HMAC_LENGTH;
                 // right-shift onion packet bytes: JS: const filler = Buffer.alloc(fillerSize, 0);
@@ -60,7 +66,7 @@ namespace LNDroneController.LND
 
                 //     hopPayloads.CopyTo(currentHopData,0); //TODO: not sure if this is equiv JS: 	currentHopData.copy(hopPayloads);
                 currentHopData.CopyTo(hopPayloads, 0);
-                var streamBytes = LNDTools.GenerateCipherStream(new byte[ONION_PACKET_LENGTH], rhoKey, new byte[12]);
+                var streamBytes = LNTools.GenerateCipherStream(new byte[ONION_PACKET_LENGTH], rhoKey, new byte[12]);
 
                 Debug.Print($"Stream Bytes: {streamBytes.ToHex()}");
                 Debug.Print($"Hop Data: {currentHopData.ToHex()}");
@@ -82,42 +88,36 @@ namespace LNDroneController.LND
                 {
                     hmacData = hmacData.Concat(associatedData).ToArray();
                 }
-                nextHmac = LNDTools.CalculateHMAC(muKey, hmacData);
+                nextHmac = LNTools.CalculateHMAC(muKey, hmacData);
             }
-            return new OnionBlob
-            {
-                EphemeralPublicKey = firstHopPublicKey,
-                HopPayloads = hopPayloads,
-                NextHmac = nextHmac,
-                Version = 0,
-            };
+            return new OnionBlob(0, firstHopPublicKey, hopPayloads, nextHmac);
         }
 
         public static byte[] GenerateFiller(List<byte[]> sharedSecrets, List<HopPayload> payloads)
         {
             var payloadSizes = payloads.Select(x => x.SphinxSize + HMAC_LENGTH).ToArray();
             var totalPayloadSize = payloadSizes.Sum(x => x);
-            var lastPayloadSize = payloadSizes[payloadSizes.Length-1];
+            var lastPayloadSize = payloadSizes[payloadSizes.Length - 1];
 
             var fillerSize = totalPayloadSize - lastPayloadSize;
             var filler = new byte[fillerSize];
             var trailingPayloadSize = 0;
-            for (int i = 0; i < sharedSecrets.Count()-1; i++)
+            for (int i = 0; i < sharedSecrets.Count() - 1; i++)
             {
                 Debug.Print($"Filler round {i}");
                 var currentSharedSecret = sharedSecrets[i];
                 var currentPayloadSize = payloadSizes[i];
 
                 Debug.Print($"Shared secret {currentSharedSecret.ToHex()}");
-                var rhoKey = LNDTools.GenerateRhoKey(currentSharedSecret);
+                var rhoKey = LNTools.GenerateRhoKey(currentSharedSecret);
                 Debug.Print($"Shared key {rhoKey.ToHex()}");
 
                 var fillerSourceStart = ONION_PACKET_LENGTH - trailingPayloadSize;
                 var fillerSourceEnd = ONION_PACKET_LENGTH + currentPayloadSize;
 
-                var streamLength = ONION_PACKET_LENGTH * 2;            
+                var streamLength = ONION_PACKET_LENGTH * 2;
 
-                var streamBytes = LNDTools.GenerateCipherStream(new byte[streamLength], rhoKey, new byte[12]);                
+                var streamBytes = LNTools.GenerateCipherStream(new byte[streamLength], rhoKey, new byte[12]);
                 for (var j = fillerSourceStart; j < fillerSourceEnd; j++)
                 {
                     var fillerIndex = j - fillerSourceStart;
@@ -131,7 +131,7 @@ namespace LNDroneController.LND
             return filler;
         }
 
-        public (HopPayload hopPayload, OnionBlob nextSphinx) Peel(byte[] sharedSecret = null, byte[] hopPrivateKey = null, byte[] associatedData = null)
+        public (HopPayload hopPayload, OnionBlob nextSphinx) Peel(byte[]? sharedSecret = null, byte[]? hopPrivateKey = null, byte[]? associatedData = null)
         {
             if (sharedSecret != null && hopPrivateKey != null)
             {
@@ -139,11 +139,11 @@ namespace LNDroneController.LND
             }
             if (hopPrivateKey != null)
             {
-                sharedSecret = LNDTools.DeriveSharedSecret(EphemeralPublicKey, hopPrivateKey);
+                sharedSecret = LNTools.DeriveSharedSecret(EphemeralPublicKey, hopPrivateKey);
             }
 
-            var rhoKey = LNDTools.GenerateRhoKey(sharedSecret);
-            var muKey = LNDTools.GenerateMuKey(sharedSecret);
+            var rhoKey = LNTools.GenerateRhoKey(sharedSecret);
+            var muKey = LNTools.GenerateMuKey(sharedSecret);
 
             var data = HopPayloads;
             if (associatedData != null)
@@ -151,7 +151,7 @@ namespace LNDroneController.LND
                 data = data.Concat(associatedData).ToArray();
             }
 
-            var currentHmac = LNDTools.CalculateHMAC(muKey, data);
+            var currentHmac = LNTools.CalculateHMAC(muKey, data);
             Debug.Print($"Excepted HMAC: {NextHmac.ToHex()}");
             Debug.Print($"Actual HMAC: {currentHmac.ToHex()}");
             if (currentHmac.ToHex() != NextHmac.ToHex())
@@ -161,9 +161,9 @@ namespace LNDroneController.LND
 
             var extendedPayload = HopPayloads.Concat(new byte[ONION_PACKET_LENGTH]).ToArray();
             var streamLength = ONION_PACKET_LENGTH * 2;
-            var streamBytes = LNDTools.GenerateCipherStream(new byte[streamLength], rhoKey, new byte[12]);
+            var streamBytes = LNTools.GenerateCipherStream(new byte[streamLength], rhoKey, new byte[12]);
 
-            extendedPayload = LNDTools.Xor(extendedPayload, streamBytes);
+            extendedPayload = LNTools.Xor(extendedPayload, streamBytes);
 
             var hopPayload = HopPayload.ParseSphinx(extendedPayload);
 
@@ -175,14 +175,11 @@ namespace LNDroneController.LND
             if (nextHmac.ToHex() != (new byte[HMAC_LENGTH]).ToHex())
             {
                 var nextPayload = extendedPayload[nextPayloadIndex..(nextPayloadIndex + ONION_PACKET_LENGTH)];
-                var nextEphemeralPublicKey = CalculateNextEphemeralPublicKey(sharedSecret,EphemeralPublicKey);
-                nextSphinx = new OnionBlob
-                {
-                    Version = this.Version,
+                var nextEphemeralPublicKey = CalculateNextEphemeralPublicKey(sharedSecret, EphemeralPublicKey);
+                nextSphinx = new OnionBlob(this.Version,
                     EphemeralPublicKey = nextEphemeralPublicKey,
                     HopPayloads = nextPayload,
-                    NextHmac = nextHmac,
-                };
+                    NextHmac = nextHmac);
             }
 
 
@@ -192,8 +189,8 @@ namespace LNDroneController.LND
 
         private byte[] CalculateNextEphemeralPublicKey(byte[] sharedSecret, byte[] ephemeralPublicKey)
         {
-            var blindingFactor = LNDTools.GenerateBlindingFactor(ephemeralPublicKey,sharedSecret);
-            return LNDTools.GenerateBlindedSessionKey(sharedSecret, blindingFactor);
+            var blindingFactor = LNTools.GenerateBlindingFactor(ephemeralPublicKey, sharedSecret);
+            return LNTools.GenerateBlindedSessionKey(sharedSecret, blindingFactor);
         }
     }
 }

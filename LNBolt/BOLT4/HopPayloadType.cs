@@ -1,4 +1,4 @@
-﻿namespace LNDroneController.LND
+﻿namespace LNBolt
 {
     public enum HopPayloadType
     {

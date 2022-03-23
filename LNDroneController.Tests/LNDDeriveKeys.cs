@@ -1,4 +1,5 @@
-﻿using LNDroneController.LND;
+﻿using LNBolt;
+using LNDroneController.LND;
 using NUnit.Framework;
 using ServiceStack;
 using System;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace LNDroneController.Tests
 {
-    public class LNDToolsTests
+    public class LNToolsTests
     {
         //private LNDNodeConnection Alice;
 
@@ -26,7 +27,7 @@ namespace LNDroneController.Tests
         {
             String salt = "2640f52eebcd9e882958951c794250eedb28002c05d7dc2ea0f195406042caf1";
             String data = "1e2fb3c8fe8fb9f262f649f64d26ecf0f2c0a805a767cf02dc2d77a6ef1fdcc3";
-            var hmac = LNDTools.CalculateHMAC(Convert.FromHexString(salt), Convert.FromHexString(data));
+            var hmac = LNTools.CalculateHMAC(Convert.FromHexString(salt), Convert.FromHexString(data));
             Assert.That(hmac.ToHex() == "f224df1c0e16949394542ce779461d8f130b569112d3d45bbaed9e9749862f16");
         }
 
@@ -35,7 +36,7 @@ namespace LNDroneController.Tests
         {
             var xprv = "xprv9s21ZrQH143K3EH5SqkxGeb1prC9TsuVnu5GcNva3Bgvp7rRMPUUDeYBrQuxZorFXE3L9XZtqm95MPLpuSkp8q2WtQHap9NDcHDsNXu2Pep";
             var lndPubKey = "0257780624efb6fd6f49fe06ab38857b5afea7c2e75923a1da6808f01fd217f51b";
-            var (lndPrivate, lndPub) = LNDTools.DeriveLNDNodeKeys(xprv, false);
+            var (lndPrivate, lndPub) = LNTools.DeriveLNDNodeKeys(xprv, false);
             Assert.That(lndPub.ToHex() == lndPubKey);
         }
 
@@ -44,8 +45,8 @@ namespace LNDroneController.Tests
         {
             var sessionKey = Convert.FromHexString("021b148a7760576194f575ed92aa171e15295ea15587a678002cfabce46478f1e5");
             var xprv = "xprv9s21ZrQH143K3EH5SqkxGeb1prC9TsuVnu5GcNva3Bgvp7rRMPUUDeYBrQuxZorFXE3L9XZtqm95MPLpuSkp8q2WtQHap9NDcHDsNXu2Pep";
-            var (lndPrivate, lndPub) = LNDTools.DeriveLNDNodeKeys(xprv, false);
-            var shared = LNDTools.DeriveSharedSecret(sessionKey, lndPrivate);
+            var (lndPrivate, lndPub) = LNTools.DeriveLNDNodeKeys(xprv, false);
+            var shared = LNTools.DeriveSharedSecret(sessionKey, lndPrivate);
             Assert.That(shared.ToHex() == "943909951d92bc114eb59ca2eeb7912ac5ee475e876edcaf216809760525c12e");
         }
 
@@ -53,7 +54,7 @@ namespace LNDroneController.Tests
         public async Task DeriveRhoKey()
         {
             var sharedSecret = Convert.FromHexString("b5756b9b542727dbafc6765a49488b023a725d631af688fc031217e90770c328");
-            var rhoKey = LNDTools.GenerateRhoKey(sharedSecret);
+            var rhoKey = LNTools.GenerateRhoKey(sharedSecret);
             Assert.That("034e18b8cc718e8af6339106e706c52d8df89e2b1f7e9142d996acf88df8799b" == rhoKey.ToHex());
         }
 
@@ -62,7 +63,7 @@ namespace LNDroneController.Tests
         {
             var publicNodeKey = Convert.FromHexString("02eec7245d6b7d2ccb30380bfbe2a3648cd7a942653f5aa340edcea1f283686619");
             var sessionKey = Convert.FromHexString("4141414141414141414141414141414141414141414141414141414141414141");
-            Assert.That(LNDTools.DeriveSharedSecret(publicNodeKey, sessionKey).ToHex() == "53eb63ea8a3fec3b3cd433b85cd62a4b145e1dda09391b348c4e1cd36a03ea66");
+            Assert.That(LNTools.DeriveSharedSecret(publicNodeKey, sessionKey).ToHex() == "53eb63ea8a3fec3b3cd433b85cd62a4b145e1dda09391b348c4e1cd36a03ea66");
         }
 
         [Test]
@@ -79,7 +80,7 @@ namespace LNDroneController.Tests
             };
             var sessionKey = Convert.FromHexString("4141414141414141414141414141414141414141414141414141414141414141");
 
-            var results = LNDTools.CalculatedSharedSecrets(sessionKey, hopPublicKeys);
+            var results = LNTools.CalculatedSharedSecrets(sessionKey, hopPublicKeys);
             Assert.That(results.Count == 5);
             Assert.That(results[0].ToHex() == "53eb63ea8a3fec3b3cd433b85cd62a4b145e1dda09391b348c4e1cd36a03ea66");
             Assert.That(results[1].ToHex() == "a6519e98832a0b179f62123b3567c106db99ee37bef036e783263602f3488fae");

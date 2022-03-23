@@ -23,6 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\LNBolt\LNBolt.csproj" />
       <ProjectReference Include="..\LNDroneController\LNDroneController.csproj" />
        <ProjectReference Include="..\LNDroneController.LND\LNDroneController.LND.csproj" />
     </ItemGroup>

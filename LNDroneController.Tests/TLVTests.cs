@@ -1,4 +1,5 @@
 ﻿using Kermalis.EndianBinaryIO;
+using LNBolt;
 using LNDroneController.Extentions;
 using LNDroneController.LND;
 using NUnit.Framework;
@@ -39,7 +40,6 @@ namespace LNDroneController.Tests
             Assert.AreEqual(tlv0.Value[0..33].ToHex(), "023da092f6980e58d2c037173180e9a465476026ee50f96695963e8efe436f54eb"); //node_id
             Assert.AreEqual(tlv0.Value[33..(33 + 8)].BE64ToUInt64(), 1); //amount_msat_1
             Assert.AreEqual(tlv0.Value[(33 + 8)..].BE64ToUInt64(), 2); //amount_msat_2
-            var x= HopPayload.ParseSphinx(data);
         }
 
         [Test]

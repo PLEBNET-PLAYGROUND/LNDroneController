@@ -1,4 +1,5 @@
 ﻿using Kermalis.EndianBinaryIO;
+using LNBolt;
 using LNDroneController.Extentions;
 using LNDroneController.LND;
 using NUnit.Framework;

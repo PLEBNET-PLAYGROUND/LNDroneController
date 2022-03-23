@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using Kermalis.EndianBinaryIO;
 
-namespace LNDroneController.LND
+namespace LNBolt
 {
     public class BigSize
     {

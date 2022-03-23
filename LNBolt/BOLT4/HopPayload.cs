@@ -1,19 +1,18 @@
 ﻿using Kermalis.EndianBinaryIO;
-using LNDroneController.Extentions;
 using ServiceStack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LNDroneController.LND
+namespace LNBolt
 {
     public class HopPayload
     {
         public HopPayloadType HopPayloadType { get; set; }
-        public byte[] ChannelId { get; set; } = null;
+        public byte[]? ChannelId { get; set; } = null;
         public ulong AmountToForward { get; set; }
         public uint OutgoingCltvValue { get; set; }
-        public byte[] PaymentMetadata { get; set; }
+        public byte[]? PaymentMetadata { get; set; }
 
         public List<TLV> OtherTLVs { get; set; } = new List<TLV>();
         public int Size
@@ -42,7 +41,7 @@ namespace LNDroneController.LND
             }
         }
 
-        public PaymentData PaymentData { get; private set; }
+        public PaymentData? PaymentData { get; private set; }
 
         public byte[] ToSphinxBuffer()
         {
@@ -60,15 +59,15 @@ namespace LNDroneController.LND
             if (HopPayloadType != HopPayloadType.Legacy)
             {  
                 var amountToForwardBufferX = AmountToForward.UInt64ToTrimmedBE64Bytes(); //  EndianBitConverter.UInt64sToBytes(AmountToForward.InArray(), 0, 1, Endianness.BigEndian).TrimZeros();
-                var amountToForwardTlv = new TLV(HopPayloadTLVTypes.AMOUNT_TO_FORWARD, amountToForwardBufferX);
+                var amountToForwardTlv = new TLV(TLVTypes.AMOUNT_TO_FORWARD, amountToForwardBufferX);
 
                 var outgoingCltvValueBuffer = OutgoingCltvValue.UInt32ToTrimmedBE32Bytes(); // EndianBitConverter.UInt32sToBytes(OutgoingCltvValue.InArray(), 0, 1, Endianness.BigEndian).TrimZeros();
-                var outgoingCltvValueTlv = new TLV(HopPayloadTLVTypes.OUTGOING_CLTV_VALUE, outgoingCltvValueBuffer);
+                var outgoingCltvValueTlv = new TLV(TLVTypes.OUTGOING_CLTV_VALUE, outgoingCltvValueBuffer);
 
                 var channelIdTlvBuffer = new List<byte>();
                 if (ChannelId != null && ChannelId.Length > 0)
                 {
-                    var channelIdTlv = new TLV(HopPayloadTLVTypes.SHORT_CHANNEL_ID, ChannelId);
+                    var channelIdTlv = new TLV(TLVTypes.SHORT_CHANNEL_ID, ChannelId);
                     channelIdTlvBuffer.AddRange(channelIdTlv.ToEncoding());
                 }
                 return amountToForwardTlv.ToEncoding().Concat(outgoingCltvValueTlv.ToEncoding()).Concat(channelIdTlvBuffer).ToArray();
@@ -124,23 +123,23 @@ namespace LNDroneController.LND
                 foreach (var tlv in tlvs)
                 {
                     var currentType = tlv.Type;
-                    if (currentType == HopPayloadTLVTypes.AMOUNT_TO_FORWARD)
+                    if (currentType == TLVTypes.AMOUNT_TO_FORWARD)
                     {
                         hopPayload.AmountToForward = tlv.Value.TrimmedBE64ToUInt64();  // EndianBitConverter.BytesToUInt64s(tlv.Value, 0, 1, Endianness.BigEndian).First();
                     }
-                    else if (currentType == HopPayloadTLVTypes.OUTGOING_CLTV_VALUE)
+                    else if (currentType == TLVTypes.OUTGOING_CLTV_VALUE)
                     {
                         hopPayload.OutgoingCltvValue = tlv.Value.TrimmedBE32ToUInt32(); //EndianBitConverter.BytesToUInt32s(tlv.Value, 0, 1, Endianness.BigEndian).First();
                     }
-                    else if (currentType == HopPayloadTLVTypes.SHORT_CHANNEL_ID)
+                    else if (currentType == TLVTypes.SHORT_CHANNEL_ID)
                     {
                         hopPayload.ChannelId = tlv.Value;
                     }
-                    else if (currentType == HopPayloadTLVTypes.PAYMENT_DATA)
+                    else if (currentType == TLVTypes.PAYMENT_DATA)
                     {
                         hopPayload.PaymentData = new PaymentData(tlv.Value);
                     }
-                    else if (currentType == HopPayloadTLVTypes.PAYMENT_METADATA)
+                    else if (currentType == TLVTypes.PAYMENT_METADATA)
                     {
                         hopPayload.PaymentMetadata = tlv.Value;
                     }

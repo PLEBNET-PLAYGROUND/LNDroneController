@@ -1,6 +1,6 @@
-﻿namespace LNDroneController.LND
+﻿namespace LNBolt
 {
-    public static class HopPayloadTLVTypes
+    public static class TLVTypes
     {
         public static readonly ulong AMOUNT_TO_FORWARD = 2;
         public static readonly ulong OUTGOING_CLTV_VALUE = 4;
