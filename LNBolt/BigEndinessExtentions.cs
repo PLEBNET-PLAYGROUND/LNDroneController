@@ -10,10 +10,9 @@ namespace LNBolt
 {
     public static class BigEndinessExtentions
     {
-
         public static byte[] UInt64ToBE64(this UInt64 num)
         {
-            return EndianBitConverter.UInt64sToBytes(num.InArray(),0,1,Endianness.BigEndian);
+            return EndianBitConverter.UInt64sToBytes(num.InArray(), 0, 1, Endianness.BigEndian);
         }
 
         public static byte[] UInt32ToBE32(this UInt32 num)
@@ -77,7 +76,7 @@ namespace LNBolt
                 throw new ArgumentNullException(nameof(buffer));
             if (buffer.Length > fullByteCount)
                 throw new ArgumentException($"{nameof(buffer)}.Length > {nameof(fullByteCount)} value of {fullByteCount}");
-            var untrimmedBuffer = new  byte[fullByteCount];
+            var untrimmedBuffer = new byte[fullByteCount];
             buffer.CopyTo(untrimmedBuffer, untrimmedBuffer.Length - buffer.Length);
             return untrimmedBuffer;
         }
@@ -87,7 +86,7 @@ namespace LNBolt
             var untrimmed = Untrim(data, 8);
             return EndianBitConverter.BytesToUInt64s(untrimmed, 0, 1, Endianness.BigEndian).First();
         }
-       
+
         public static UInt32 TrimmedBE32ToUInt32(this byte[] data)
         {
             var untrimmed = Untrim(data, 4);
