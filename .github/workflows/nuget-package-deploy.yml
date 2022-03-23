@@ -29,4 +29,9 @@ jobs:
         cd bin/Release/
         package=$(ls LNDroneController.LND.*.nupkg)
         dotnet nuget push $package  --api-key ${{ secrets.NUGET }} --source https://api.nuget.org/v3/index.json
-        #--source "github"
+        cd LNBolt
+        dotnet pack --configuration Release
+        #dotnet nuget add source --username rsafier --password ${{ secrets.CR_PAT }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/plebnet-playground/index.json"
+        cd bin/Release/
+        package=$(ls LNTool.*.nupkg)
+        dotnet nuget push $package  --api-key ${{ secrets.NUGET }} --source https://api.nuget.org/v3/index.json
