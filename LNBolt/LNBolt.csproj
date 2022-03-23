@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <PackageProjectUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</PackageProjectUrl>
-	  <PackageId>LNTools</PackageId>
+	  <PackageId>LNBolt</PackageId>
 	  <Version>0.1.$([System.DateTime]::UtcNow.ToString(MMdd)).$([System.DateTime]::UtcNow.ToString(HHmm))</Version>
 	  <Authors>Richard Safier</Authors>
-	  <PackageDescription>LNTools - C# BOLT protocol helpers</PackageDescription>
+	  <PackageDescription>LNBolt - C# BOLT protocol helpers</PackageDescription>
 	  <RepositoryUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</RepositoryUrl>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
