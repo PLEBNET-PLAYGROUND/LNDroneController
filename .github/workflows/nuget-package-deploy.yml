@@ -28,11 +28,3 @@ jobs:
         cd bin/Release/
         package=$(ls LNDroneController.LND.*.nupkg)
         dotnet nuget push $package  --api-key ${{ secrets.NUGET }} --source https://api.nuget.org/v3/index.json
-        cd ..
-    - name: Pack and Push NuGet Package LNBolt
-      run: |
-        cd LNBolt
-        dotnet pack --configuration Release
-        cd bin/Release/
-        package=$(ls LNBolt.*.nupkg)
-        dotnet nuget push $package  --api-key ${{ secrets.NUGET }} --source https://api.nuget.org/v3/index.json
