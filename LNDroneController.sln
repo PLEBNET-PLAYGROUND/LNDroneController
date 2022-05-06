@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LNDroneController.Tests", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LNDroneController.LND", "LNDroneController.LND\LNDroneController.LND.csproj", "{3710BFC3-DF46-4352-8AB7-21E6B63926AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LNDroneController.CLN", "LNDroneController.CLN\LNDroneController.CLN.csproj", "{15C236D4-DA6A-40CC-B0D4-A0B342E67735}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{3710BFC3-DF46-4352-8AB7-21E6B63926AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3710BFC3-DF46-4352-8AB7-21E6B63926AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3710BFC3-DF46-4352-8AB7-21E6B63926AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15C236D4-DA6A-40CC-B0D4-A0B342E67735}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15C236D4-DA6A-40CC-B0D4-A0B342E67735}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15C236D4-DA6A-40CC-B0D4-A0B342E67735}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15C236D4-DA6A-40CC-B0D4-A0B342E67735}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

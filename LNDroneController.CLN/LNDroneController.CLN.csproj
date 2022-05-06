@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+	  <TargetFrameworks>net6.0</TargetFrameworks>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <PackageProjectUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</PackageProjectUrl>
+	  <PackageId>LNDroneController.CLN</PackageId>
+	  <Version>0.2.$([System.DateTime]::UtcNow.ToString(MMdd)).$([System.DateTime]::UtcNow.ToString(HHmm))</Version>
+	  <Authors>Richard Safier</Authors>
+	  <PackageDescription>LNDroneController CLN Implementation</PackageDescription>
+	  <RepositoryUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</RepositoryUrl>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+	  <PackageReference Include="Google.Protobuf" Version="3.19.4" />
+	  <PackageReference Include="Grpc.Net.ClientFactory" Version="2.44.0" />
+	  <PackageReference Include="Grpc.Net.Client" Version="2.44.0" />
+	  <PackageReference Include="Grpc.Net.Common" Version="2.44.0" />
+
+	  <PackageReference Include="Grpc.Tools" Version="2.44.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+  </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Grpc\node.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
+		<Protobuf Include="Grpc\primitives.proto" GrpcServices="Client" ProtoRoot="Grpc" OutputDir="$(Protobuf_OutputPath)%(RelativeDir)" />
+		 
+	</ItemGroup>
+</Project>
