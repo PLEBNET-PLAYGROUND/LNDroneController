@@ -8,8 +8,12 @@ namespace LNDroneController.CLN
         /// Grpc endpoint
         /// </summary>
         public string GrpcEndpoint { get; set; }
+
+        public string ClientCertBase64 { get; set; }
+        public string ClientKeyBase64 { get; set; }
+
         /// <summary>
-        /// Provide client side TLS cert w/ key
+        /// Provide client side TLS cert w/  or populate with ClientCertBase64 and ClientKeyBase64 fields
         /// </summary>
         public X509Certificate2 ClientCertWithKey { get; set; }
     }

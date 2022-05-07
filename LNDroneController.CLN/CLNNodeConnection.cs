@@ -33,11 +33,21 @@ namespace LNDroneController.CLN
         /// <param name="settings">LND Configuration Settings</param>
         public CLNNodeConnection(CLNSettings settings)
         {
-            StartWithBase64(settings.ClientCertWithKey, settings.GrpcEndpoint);
+            if (settings.ClientCertWithKey == null)
+            {
+                settings.ClientCertWithKey = X509Certificate2.CreateFromPem(
+                    Encoding.UTF8.GetString(Convert.FromBase64String(settings.ClientCertBase64)),
+                    Encoding.UTF8.GetString(Convert.FromBase64String(settings.ClientKeyBase64)));
+            }
+            Start(settings.ClientCertWithKey, settings.GrpcEndpoint);
         }
 
-
-        public void StartWithBase64(X509Certificate2 cert, string host)
+        /// <summary>
+        /// Setup gRPC link
+        /// </summary>
+        /// <param name="cert"></param>
+        /// <param name="host"></param>
+        public void Start(X509Certificate2 cert, string host)
         {
             gRPCChannel = CreateGrpcConnection(host, cert);
             NodeClient = new Cln.Node.NodeClient(gRPCChannel);
@@ -60,7 +70,7 @@ namespace LNDroneController.CLN
             // error when we communicate with the lnd rpc server.
 
 
-            //Possible fix for windows bug?
+            //Windows bug fix work around.
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var originalCert = cert;
@@ -73,7 +83,6 @@ namespace LNDroneController.CLN
             {
                 ServerCertificateCustomValidationCallback = (httpRequestMessage, certificate, cetChain, policyErrors) =>
                 {
-                    certificate = cert;
                     return true;
                 }
             };
@@ -91,6 +100,5 @@ namespace LNDroneController.CLN
                             });
             return grpcChannel;
         }
-
     }
 }
