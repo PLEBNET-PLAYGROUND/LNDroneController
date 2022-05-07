@@ -25,7 +25,7 @@ namespace LNDroneController.CLN
         //Start with manual startup
         public CLNNodeConnection()
         {
-
+ 
         }
         /// <summary>
         /// Constructor auto-start
