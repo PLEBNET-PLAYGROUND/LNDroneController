@@ -10,9 +10,9 @@
         <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
         <PackageReference Include="BouncyCastle" Version="1.8.9" />
         <PackageReference Include="EndianBinaryIO" Version="1.1.2" />
-        <PackageReference Include="LNBolt" Version="0.1.324.237" />
+        <PackageReference Include="LNBolt" Version="0.1.417.2006" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-        <PackageReference Include="NBitcoin" Version="7.0.6" />
+        <PackageReference Include="NBitcoin" Version="7.0.7" />
         <PackageReference Include="NUnit" Version="3.13.3" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
         <PackageReference Include="coverlet.collector" Version="3.1.2">
@@ -24,12 +24,25 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\LNDroneController.CLN\LNDroneController.CLN.csproj" />
       <ProjectReference Include="..\LNDroneController\LNDroneController.csproj" />
        <ProjectReference Include="..\LNDroneController.LND\LNDroneController.LND.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <None Update="BigSizeTestVectors.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="ca.pem">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="client-key.pem">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="client.pem">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="server.pem">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
