@@ -1,4 +1,6 @@
-﻿namespace LNDroneController.CLN
+﻿using System.Security.Cryptography.X509Certificates;
+
+namespace LNDroneController.CLN
 {
     public class CLNSettings
     {
@@ -7,15 +9,8 @@
         /// </summary>
         public string GrpcEndpoint { get; set; }
         /// <summary>
-        /// TLS Cert as Base64 string, if provided will be perfered source
+        /// Provide client side TLS cert w/ key
         /// </summary>
-        public string TLSCertBase64 { get; set; }
-        /// <summary>
-        /// Macaroon Path
-        /// </summary>
-        public string MacaroonBase64 { get; set; }
-        /// <summary>
-        /// Default Fee Maximum as a percentage of total amount of invoice
-        /// </summary>
+        public X509Certificate2 ClientCertWithKey { get; set; }
     }
 }
