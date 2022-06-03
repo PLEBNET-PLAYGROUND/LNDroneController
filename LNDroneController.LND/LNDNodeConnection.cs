@@ -24,6 +24,7 @@ namespace LNDroneController.LND
     public class LNDNodeConnection : IDisposable
     {
         private Random r = new Random();
+
         public GrpcChannel gRPCChannel { get; internal set; }
         public Lightning.LightningClient LightningClient { get; internal set; }
         public Router.RouterClient RouterClient { get; internal set; }
@@ -494,8 +495,9 @@ namespace LNDroneController.LND
         }
         public async Task<Payment> KeysendPayment(string dest, long amtSat, long feeLimitSat = 10, string message = null, int timeoutSeconds = 60, Dictionary<ulong, byte[]> keySendPairs = null)
         {
-            var randomBytes = new byte[32];
-            r.NextBytes(randomBytes);
+            
+            var randomBytes = RandomNumberGenerator.GetBytes(32); // new byte[32];
+            //r.NextBytes(randomBytes);
             var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash(randomBytes);
             var payment = new SendPaymentRequest
@@ -505,6 +507,7 @@ namespace LNDroneController.LND
                 FeeLimitSat = feeLimitSat,
                 PaymentHash = Google.Protobuf.ByteString.CopyFrom(hash),
                 TimeoutSeconds = timeoutSeconds,
+                
             };
             payment.DestCustomRecords.Add(5482373484, Google.Protobuf.ByteString.CopyFrom(randomBytes));  //keysend
             if (keySendPairs != null)
