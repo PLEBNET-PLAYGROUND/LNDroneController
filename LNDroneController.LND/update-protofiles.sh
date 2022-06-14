@@ -11,3 +11,6 @@ wget -O ./Grpc/walletrpc/walletkit.proto https://raw.githubusercontent.com/light
 wget -O ./Grpc/autopilotrpc/autopilot.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/autopilotrpc/autopilot.proto
 wget -O ./Grpc/verrpc/verrpc.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/verrpc/verrpc.proto
 wget -O ./Grpc/stateservice.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/stateservice.proto
+wget -O ./Grpc/neutrinorpc/neutrino.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/neutrinorpc/neutrino.proto
+wget -O ./Grpc/peersrpc/peers.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/peersrpc/peers.proto
+wget -O ./Grpc/devrpc/dev.proto https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/devrpc/dev.proto
