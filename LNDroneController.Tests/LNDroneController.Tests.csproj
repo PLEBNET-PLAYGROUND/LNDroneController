@@ -10,16 +10,16 @@
         <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
         <PackageReference Include="BouncyCastle" Version="1.8.9" />
         <PackageReference Include="EndianBinaryIO" Version="1.1.2" />
-        <PackageReference Include="LNBolt" Version="0.1.417.2006" />
+        <PackageReference Include="LNBolt" Version="0.1.626.105" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
-        <PackageReference Include="NBitcoin" Version="7.0.8" />
+        <PackageReference Include="NBitcoin" Version="7.0.10" />
         <PackageReference Include="NUnit" Version="3.13.3" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
         <PackageReference Include="coverlet.collector" Version="3.1.2">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="ServiceStack.Text" Version="6.1.0" />
+        <PackageReference Include="ServiceStack.Text" Version="6.2.0" />
         <PackageReference Include="Waher.Security.ChaChaPoly" Version="1.0.1" />
     </ItemGroup>
 
