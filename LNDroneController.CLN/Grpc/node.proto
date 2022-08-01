@@ -47,11 +47,13 @@ service Node {
 	rpc TxSend(TxsendRequest) returns (TxsendResponse) {}
 	rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {}
 	rpc Feerates(FeeratesRequest) returns (FeeratesResponse) {}
+	rpc FundChannel(FundchannelRequest) returns (FundchannelResponse) {}
 	rpc GetRoute(GetrouteRequest) returns (GetrouteResponse) {}
 	rpc ListForwards(ListforwardsRequest) returns (ListforwardsResponse) {}
 	rpc ListPays(ListpaysRequest) returns (ListpaysResponse) {}
 	rpc Ping(PingRequest) returns (PingResponse) {}
 	rpc SignMessage(SignmessageRequest) returns (SignmessageResponse) {}
+	rpc Stop(StopRequest) returns (StopResponse) {}
 }
 
 message GetinfoRequest {
@@ -128,6 +130,7 @@ message ListpeersPeers {
 	repeated ListpeersPeersLog log = 3;
 	repeated ListpeersPeersChannels channels = 4;
 	repeated string netaddr = 5;
+	optional string remote_addr = 7;
 	optional bytes features = 6;
 }
 
@@ -181,6 +184,7 @@ message ListpeersPeersChannels {
 	optional bytes close_to = 14;
 	optional bool private = 15;
 	ChannelSide opener = 16;
+	optional ChannelSide closer = 17;
 	repeated string features = 18;
 	optional Amount to_us_msat = 20;
 	optional Amount min_to_us_msat = 21;
@@ -228,9 +232,18 @@ message ListpeersPeersChannelsInflight {
 }
 
 message ListpeersPeersChannelsFunding {
-	Amount local_msat = 1;
-	Amount remote_msat = 2;
-	Amount pushed_msat = 3;
+	optional Amount local_msat = 1;
+	optional Amount remote_msat = 2;
+	optional Amount pushed_msat = 3;
+	Amount local_funds_msat = 4;
+	Amount remote_funds_msat = 7;
+	optional Amount fee_paid_msat = 5;
+	optional Amount fee_rcvd_msat = 6;
+}
+
+message ListpeersPeersChannelsAlias {
+	optional string local = 1;
+	optional string remote = 2;
 }
 
 message ListpeersPeersChannelsHtlcs {
@@ -271,6 +284,7 @@ message ListfundsOutputs {
 	optional string address = 5;
 	optional bytes redeemscript = 6;
 	ListfundsOutputsStatus status = 7;
+	bool reserved = 9;
 	optional uint32 blockheight = 8;
 }
 
@@ -289,7 +303,7 @@ message SendpayRequest {
 	repeated SendpayRoute route = 1;
 	bytes payment_hash = 2;
 	optional string label = 3;
-	optional Amount msatoshi = 4;
+	optional Amount amount_msat = 10;
 	optional string bolt11 = 5;
 	optional bytes payment_secret = 6;
 	optional uint32 partid = 7;
@@ -320,7 +334,7 @@ message SendpayResponse {
 }
 
 message SendpayRoute {
-	Amount msatoshi = 1;
+	Amount amount_msat = 5;
 	bytes id = 2;
 	uint32 delay = 3;
 	string channel = 4;
@@ -380,7 +394,7 @@ message CheckmessageRequest {
 
 message CheckmessageResponse {
 	bool verified = 1;
-	optional bytes pubkey = 2;
+	bytes pubkey = 2;
 }
 
 message CloseRequest {
@@ -557,7 +571,7 @@ message DelinvoiceResponse {
 }
 
 message InvoiceRequest {
-	AmountOrAny msatoshi = 1;
+	AmountOrAny amount_msat = 10;
 	string description = 2;
 	string label = 3;
 	optional uint64 expiry = 7;
@@ -636,7 +650,7 @@ message SendonionRequest {
 	repeated bytes shared_secrets = 5;
 	optional uint32 partid = 6;
 	optional string bolt11 = 7;
-	optional Amount msatoshi = 8;
+	optional Amount amount_msat = 12;
 	optional bytes destination = 9;
 	optional bytes localofferid = 10;
 	optional uint64 groupid = 11;
@@ -765,7 +779,7 @@ message ListtransactionsTransactionsOutputs {
 		CHANNEL_UNILATERAL_CHEAT = 10;
 	}
 	uint32 index = 1;
-	Amount msat = 2;
+	Amount amount_msat = 6;
 	bytes scriptPubKey = 3;
 	optional ListtransactionsTransactionsOutputsType item_type = 4;
 	optional string channel = 5;
@@ -773,7 +787,7 @@ message ListtransactionsTransactionsOutputs {
 
 message PayRequest {
 	string bolt11 = 1;
-	optional Amount msatoshi = 2;
+	optional Amount amount_msat = 13;
 	optional string label = 3;
 	optional double riskfactor = 8;
 	optional double maxfeepercent = 4;
@@ -943,7 +957,7 @@ message WithdrawResponse {
 
 message KeysendRequest {
 	bytes destination = 1;
-	Amount msatoshi = 2;
+	Amount amount_msat = 10;
 	optional string label = 3;
 	optional double maxfeepercent = 4;
 	optional uint32 retry_for = 5;
@@ -1130,9 +1144,32 @@ message FeeratesOnchain_fee_estimates {
 	uint64 htlc_success_satoshis = 5;
 }
 
+message FundchannelRequest {
+	bytes id = 9;
+	AmountOrAll amount = 1;
+	optional Feerate feerate = 2;
+	optional bool announce = 3;
+	optional uint32 minconf = 10;
+	optional Amount push_msat = 5;
+	optional string close_to = 6;
+	optional Amount request_amt = 7;
+	optional string compact_lease = 8;
+	repeated Outpoint utxos = 11;
+	optional uint32 mindepth = 12;
+}
+
+message FundchannelResponse {
+	bytes tx = 1;
+	bytes txid = 2;
+	uint32 outnum = 3;
+	bytes channel_id = 4;
+	optional bytes close_to = 5;
+	optional uint32 mindepth = 6;
+}
+
 message GetrouteRequest {
 	bytes id = 1;
-	Amount msatoshi = 2;
+	Amount amount_msat = 9;
 	uint64 riskfactor = 3;
 	optional double cltv = 4;
 	optional bytes fromid = 5;
@@ -1253,4 +1290,10 @@ message SignmessageResponse {
 	bytes signature = 1;
 	bytes recid = 2;
 	string zbase = 3;
+}
+
+message StopRequest {
+}
+
+message StopResponse {
 }
