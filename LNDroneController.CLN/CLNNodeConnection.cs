@@ -15,6 +15,7 @@ namespace LNDroneController.CLN
 {
     public class CLNNodeConnection
     {
+        public bool CertBugFixFlag {  get; set; }
         public GrpcChannel gRPCChannel { get; internal set; }
         public Node.NodeClient NodeClient { get; private set; }
         public string LocalNodePubKey { get; internal set; }
@@ -39,6 +40,7 @@ namespace LNDroneController.CLN
                     Encoding.UTF8.GetString(Convert.FromBase64String(settings.ClientCertBase64)),
                     Encoding.UTF8.GetString(Convert.FromBase64String(settings.ClientKeyBase64)));
             }
+            CertBugFixFlag = settings.CertBugFixFlag; 
             Start(settings.ClientCertWithKey, settings.GrpcEndpoint);
         }
 
@@ -71,7 +73,7 @@ namespace LNDroneController.CLN
 
 
             //Windows bug fix work around.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || CertBugFixFlag)
             {
                 var originalCert = cert;
                 cert = new X509Certificate2(cert.Export(X509ContentType.Pkcs12));

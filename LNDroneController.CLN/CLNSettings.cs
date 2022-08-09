@@ -16,5 +16,7 @@ namespace LNDroneController.CLN
         /// Provide client side TLS cert w/  or populate with ClientCertBase64 and ClientKeyBase64 fields
         /// </summary>
         public X509Certificate2 ClientCertWithKey { get; set; }
+
+        public bool CertBugFixFlag { get; set; }
     }
 }
