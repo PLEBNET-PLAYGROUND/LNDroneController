@@ -20,13 +20,13 @@
 
   
   <ItemGroup>
-    <PackageReference Include="EndianBinaryIO" Version="1.1.2" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.5" />
-    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.47.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.47.0" />
-    <PackageReference Include="Grpc.Net.Common" Version="2.47.0" />
+    <PackageReference Include="EndianBinaryIO" Version="2.0.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.21.8" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.49.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.49.0" />
+    <PackageReference Include="Grpc.Net.Common" Version="2.49.0" />
         
-    <PackageReference Include="Grpc.Tools" Version="2.48.0"> 
+    <PackageReference Include="Grpc.Tools" Version="2.50.0"> 
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -35,11 +35,11 @@
     
     <PackageReference Include="Microsoft.NETCore.Targets" Version="5.0.0" />
     
-    <PackageReference Include="NBitcoin" Version="7.0.10" />
+    <PackageReference Include="NBitcoin" Version="7.0.14" />
     
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-    <PackageReference Include="ServiceStack.Text" Version="6.2.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" /> 
+    <PackageReference Include="ServiceStack.Text" Version="6.4.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.1" /> 
   </ItemGroup>
  
   

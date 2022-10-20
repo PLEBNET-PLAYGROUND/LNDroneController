@@ -2217,6 +2217,13 @@ message OpenChannelRequest {
     to use the default fee rate value specified in the config or 0.
     */
     bool use_fee_rate = 24;
+
+    /*
+    The number of satoshis we require the remote peer to reserve. This value,
+    if specified, must be above the dust limit and below 20% of the channel
+    capacity.
+    */
+    uint64 remote_chan_reserve_sat = 25;
 }
 message OpenStatusUpdate {
     oneof update {
@@ -4042,6 +4049,10 @@ message ForwardingHistoryRequest {
 
     // The max number of events to return in the response to this query.
     uint32 num_max_events = 4;
+
+    // Informs the server if the peer alias lookup per forwarding event
+    // should be skipped in order to improve performance.
+    bool skip_peer_alias_lookup = 5;
 }
 message ForwardingEvent {
     // Timestamp is the time (unix epoch offset) that this circuit was
@@ -4080,6 +4091,12 @@ message ForwardingEvent {
     // The number of nanoseconds elapsed since January 1, 1970 UTC when this
     // circuit was completed.
     uint64 timestamp_ns = 11;
+
+    // The peer alias of the incoming channel.
+    string peer_alias_in = 12;
+
+    // The peer alias of the outgoing channel.
+    string peer_alias_out = 13;
 
     // TODO(roasbeef): add settlement latency?
     //  * use FPE on the chan id?
