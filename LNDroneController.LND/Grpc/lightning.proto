@@ -577,6 +577,20 @@ service Lightning {
     zero conf).
     */
     rpc ListAliases (ListAliasesRequest) returns (ListAliasesResponse);
+
+    rpc LookupHtlc (LookupHtlcRequest) returns (LookupHtlcResponse);
+}
+
+message LookupHtlcRequest {
+    uint64 chan_id = 1;
+
+    uint64 htlc_index = 2;
+}
+
+message LookupHtlcResponse {
+    bool settled = 1;
+
+    bool offchain = 2;
 }
 
 message SubscribeCustomMessagesRequest {
@@ -3054,6 +3068,9 @@ message LightningNode {
     repeated NodeAddress addresses = 4;
     string color = 5;
     map<uint32, Feature> features = 6;
+
+    // Custom node announcement tlv records.
+    map<uint64, bytes> custom_records = 7;
 }
 
 message NodeAddress {
@@ -3069,6 +3086,9 @@ message RoutingPolicy {
     bool disabled = 5;
     uint64 max_htlc_msat = 6;
     uint32 last_update = 7;
+
+    // Custom channel update tlv records.
+    map<uint64, bytes> custom_records = 8;
 }
 
 /*
@@ -3096,6 +3116,9 @@ message ChannelEdge {
 
     RoutingPolicy node1_policy = 7;
     RoutingPolicy node2_policy = 8;
+
+    // Custom channel announcement tlv records.
+    map<uint64, bytes> custom_records = 9;
 }
 
 message ChannelGraphRequest {
@@ -3328,7 +3351,7 @@ message Invoice {
     int64 value_msat = 23;
 
     /*
-    Whether this invoice has been fulfilled
+    Whether this invoice has been fulfilled.
 
     The field is deprecated. Use the state field instead (compare to SETTLED).
     */
@@ -3336,12 +3359,14 @@ message Invoice {
 
     /*
     When this invoice was created.
+    Measured in seconds since the unix epoch.
     Note: Output only, don't specify for creating an invoice.
     */
     int64 creation_date = 7;
 
     /*
     When this invoice was settled.
+    Measured in seconds since the unix epoch.
     Note: Output only, don't specify for creating an invoice.
     */
     int64 settle_date = 8;
@@ -3378,6 +3403,8 @@ message Invoice {
     repeated RouteHint route_hints = 14;
 
     // Whether this invoice should include routing hints for private channels.
+    // Note: When enabled, if value and value_msat are zero, a large number of
+    // hints with these channels can be included, which might not be desirable.
     bool private = 15;
 
     /*
@@ -3606,7 +3633,16 @@ message ListInvoiceRequest {
     specified index offset. This can be used to paginate backwards.
     */
     bool reversed = 6;
+
+    // If set, returns all invoices with a creation date greater than or euqal
+    // to it. Measured in seconds since the unix epoch.
+    uint64 creation_date_start = 7;
+
+    // If set, returns all invoices with a creation date less than or euqal to
+    // it. Measured in seconds since the unix epoch.
+    uint64 creation_date_end = 8;
 }
+
 message ListInvoiceResponse {
     /*
     A list of invoices from the time slice of the time series specified in the
@@ -3805,6 +3841,14 @@ message ListPaymentsRequest {
     of payments, as all of them have to be iterated through to be counted.
     */
     bool count_total_payments = 5;
+
+    // If set, returns all invoices with a creation date greater than or euqal
+    // to it. Measured in seconds since the unix epoch.
+    uint64 creation_date_start = 6;
+
+    // If set, returns all invoices with a creation date less than or euqal to
+    // it. Measured in seconds since the unix epoch.
+    uint64 creation_date_end = 7;
 }
 
 message ListPaymentsResponse {
@@ -4050,9 +4094,9 @@ message ForwardingHistoryRequest {
     // The max number of events to return in the response to this query.
     uint32 num_max_events = 4;
 
-    // Informs the server if the peer alias lookup per forwarding event
-    // should be skipped in order to improve performance.
-    bool skip_peer_alias_lookup = 5;
+    // Informs the server if the peer alias should be looked up for each
+    // forwarding event.
+    bool peer_alias_lookup = 5;
 }
 message ForwardingEvent {
     // Timestamp is the time (unix epoch offset) that this circuit was
