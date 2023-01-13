@@ -17,7 +17,19 @@ namespace LNDroneController.Extentions
     {
         private static Random r = new Random();
 
-      
+        public static long PackUnsignedToInt64(this ulong i)
+        {
+            var unsigned = BitConverter.GetBytes(i);
+            var signedInt = BitConverter.ToInt64(unsigned);
+            return signedInt;
+        }
+
+        public static ulong UnpackSignedToUInt64(this long i)
+        {
+            var byteArray = BitConverter.GetBytes(i);
+            var backToUnsigned = BitConverter.ToUInt64(byteArray);
+            return backToUnsigned;
+        }
 
         public static async Task<List<LNDNodeConnection>> GetNewRandomNodes(this List<LNDNodeConnection> nodes, LNDNodeConnection baseNode, int count, int maxCycleCount = 1000)
         {
