@@ -18,7 +18,7 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     
     <PackageReference Include="Microsoft.NETCore.Targets" Version="5.0.0" />
-    <PackageReference Include="ServiceStack.Text" Version="6.4.0" />
+    <PackageReference Include="ServiceStack.Text" Version="6.8.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" /> 
   </ItemGroup>
 <ItemGroup>

@@ -5,7 +5,7 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageProjectUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</PackageProjectUrl>
 		<PackageId>LNDroneController.LND</PackageId>
-		<Version>0.4.$([System.DateTime]::UtcNow.ToString(MMdd)).$([System.DateTime]::UtcNow.ToString(HHmm))</Version>
+		<Version>0.6.$([System.DateTime]::UtcNow.ToString(MMdd)).$([System.DateTime]::UtcNow.ToString(HHmm))</Version>
 		<Authors>Richard Safier</Authors>
 		<PackageDescription>LNDroneController LND Implementation</PackageDescription>
 		<RepositoryUrl>https://github.com/PLEBNET-PLAYGROUND/LNDroneController</RepositoryUrl>
@@ -21,12 +21,12 @@
   
   <ItemGroup>
     <PackageReference Include="EndianBinaryIO" Version="2.0.1" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.10" />
-    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.50.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.50.0" />
-    <PackageReference Include="Grpc.Net.Common" Version="2.50.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.22.1" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.52.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.52.0" />
+    <PackageReference Include="Grpc.Net.Common" Version="2.52.0" />
         
-    <PackageReference Include="Grpc.Tools" Version="2.50.0"> 
+    <PackageReference Include="Grpc.Tools" Version="2.53.0"> 
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -35,10 +35,10 @@
     
     <PackageReference Include="Microsoft.NETCore.Targets" Version="5.0.0" />
     
-    <PackageReference Include="NBitcoin" Version="7.0.20" />
+    <PackageReference Include="NBitcoin" Version="7.0.25" />
     
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-    <PackageReference Include="ServiceStack.Text" Version="6.4.0" />
+    <PackageReference Include="ServiceStack.Text" Version="6.8.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" /> 
   </ItemGroup>
  

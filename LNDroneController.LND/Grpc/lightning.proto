@@ -567,6 +567,10 @@ service Lightning {
     /* lncli: `subscribecustom`
     SubscribeCustomMessages subscribes to a stream of incoming custom peer
     messages.
+
+    To include messages with type outside of the custom range (>= 32768) lnd
+    needs to be compiled with  the `dev` build tag, and the message type to
+    override should be specified in lnd's experimental protocol configuration.
     */
     rpc SubscribeCustomMessages (SubscribeCustomMessagesRequest)
         returns (stream CustomMessage);
@@ -578,18 +582,26 @@ service Lightning {
     */
     rpc ListAliases (ListAliasesRequest) returns (ListAliasesResponse);
 
-    rpc LookupHtlc (LookupHtlcRequest) returns (LookupHtlcResponse);
+    /*
+    LookupHtlcResolution retrieves a final htlc resolution from the database.
+    If the htlc has no final resolution yet, a NotFound grpc status code is
+    returned.
+    */
+    rpc LookupHtlcResolution (LookupHtlcResolutionRequest)
+        returns (LookupHtlcResolutionResponse);
 }
 
-message LookupHtlcRequest {
+message LookupHtlcResolutionRequest {
     uint64 chan_id = 1;
 
     uint64 htlc_index = 2;
 }
 
-message LookupHtlcResponse {
+message LookupHtlcResolutionResponse {
+    // Settled is true is the htlc was settled. If false, the htlc was failed.
     bool settled = 1;
 
+    // Offchain indicates whether the htlc was resolved off-chain or on-chain.
     bool offchain = 2;
 }
 
@@ -612,6 +624,9 @@ message SendCustomMessageRequest {
     bytes peer = 1;
 
     // Message type. This value needs to be in the custom range (>= 32768).
+    // To send a type < custom range, lnd needs to be compiled with the `dev`
+    // build tag, and the message type to override should be specified in lnd's
+    // experimental protocol configuration.
     uint32 type = 2;
 
     // Raw message data.
@@ -1524,6 +1539,9 @@ message Channel {
 
     // This is the confirmed / on-chain zero-conf SCID.
     uint64 zero_conf_confirmed_scid = 33;
+
+    // The configured alias name of our peer.
+    string peer_alias = 34;
 }
 
 message ListChannelsRequest {
@@ -1537,6 +1555,11 @@ message ListChannelsRequest {
     empty, all channels will be returned.
     */
     bytes peer = 5;
+
+    // Informs the server if the peer alias lookup per channel should be
+    // enabled. It is turned off by default in order to avoid degradation of
+    // performance for existing clients.
+    bool peer_alias_lookup = 6;
 }
 message ListChannelsResponse {
     // The list of active channels
@@ -1905,6 +1928,9 @@ message GetInfoResponse {
     Indicates whether the HTLC interceptor API is in always-on mode.
     */
     bool require_htlc_interceptor = 21;
+
+    // Indicates whether final htlc resolutions are stored on disk.
+    bool store_final_htlc_resolutions = 22;
 }
 
 message GetRecoveryInfoRequest {
@@ -3387,7 +3413,7 @@ message Invoice {
     */
     bytes description_hash = 10;
 
-    // Payment request expiry time in seconds. Default is 3600 (1 hour).
+    // Payment request expiry time in seconds. Default is 86400 (24 hours).
     int64 expiry = 11;
 
     // Fallback on-chain address.
@@ -3634,11 +3660,11 @@ message ListInvoiceRequest {
     */
     bool reversed = 6;
 
-    // If set, returns all invoices with a creation date greater than or euqal
+    // If set, returns all invoices with a creation date greater than or equal
     // to it. Measured in seconds since the unix epoch.
     uint64 creation_date_start = 7;
 
-    // If set, returns all invoices with a creation date less than or euqal to
+    // If set, returns all invoices with a creation date less than or equal to
     // it. Measured in seconds since the unix epoch.
     uint64 creation_date_end = 8;
 }
@@ -3842,11 +3868,11 @@ message ListPaymentsRequest {
     */
     bool count_total_payments = 5;
 
-    // If set, returns all invoices with a creation date greater than or euqal
+    // If set, returns all invoices with a creation date greater than or equal
     // to it. Measured in seconds since the unix epoch.
     uint64 creation_date_start = 6;
 
-    // If set, returns all invoices with a creation date less than or euqal to
+    // If set, returns all invoices with a creation date less than or equal to
     // it. Measured in seconds since the unix epoch.
     uint64 creation_date_end = 7;
 }
