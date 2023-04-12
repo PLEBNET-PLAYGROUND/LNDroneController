@@ -1,4 +1,6 @@
-﻿using System;
+﻿using NBitcoin.Logging;
+using ServiceStack;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,11 +19,14 @@ namespace LNDroneController.LND
 
     public class LNDNodePool : IDisposable, ILNDNodePool
     {
-        private List<LNDNodeConnection> Nodes;
-        private List<LNDNodeConnection> ReadyNodes;
+        private readonly List<LNDNodeConnection> Nodes = new List<LNDNodeConnection>();
+        public readonly List<LNDNodeConnection> ReadyNodes = new List<LNDNodeConnection>();
+        
+        private readonly List<LNDSettings> LNDNodesNotYetInitialized = new List<LNDSettings>();
 
-        private Timer RPCCheckTimer;
+        private PeriodicTimer RPCCheckTimer;
         private readonly TimeSpan UpdateReadyStatesPeriod = TimeSpan.FromSeconds(5);
+        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         public LNDNodePool(List<LNDNodeConnection> nodes)
         {
@@ -38,31 +43,55 @@ namespace LNDroneController.LND
         {
             foreach (var node in nodeSettings)
             {
-                Nodes.Add(new LNDNodeConnection(node));
+                LNDNodesNotYetInitialized.Add(node);
+            }
+        }
 
+        private void SetupNotYetInitializedNodes()
+        {
+            var lndNodes = LNDNodesNotYetInitialized.CreateCopy();
+
+            foreach (var settings in lndNodes)
+            {
+                try
+                {
+                    var node = new LNDNodeConnection(settings);
+                    Nodes.Add(node);
+                    LNDNodesNotYetInitialized.Remove(LNDNodesNotYetInitialized.First(x => x.GrpcEndpoint == settings.GrpcEndpoint));
+                }
+                catch (Exception ex)
+                {
+                    continue;
+                }
             }
         }
         private void SetupTimers()
         {
-            RPCCheckTimer = new Timer(UpdateReadyStates, null, UpdateReadyStatesPeriod, UpdateReadyStatesPeriod);
+            RPCCheckTimer = new PeriodicTimer(UpdateReadyStatesPeriod);
+            Task.Run(async () => await UpdateReadyStates(), _cancellationTokenSource.Token);
         }
 
-        private void UpdateReadyStates(object state) //TIMER
+        private async Task UpdateReadyStates() //TIMER
         {
-            foreach (var node in Nodes)
+            while (await RPCCheckTimer.WaitForNextTickAsync(_cancellationTokenSource.Token))
             {
-                if (!node.IsReady)
+                SetupNotYetInitializedNodes();
+                foreach (var node in Nodes)
                 {
-                    ReadyNodes.Remove(node);
-                }
-                else
-                {
-                    if (!ReadyNodes.Contains(node))
+                    if (!node.IsReady)
                     {
-                        ReadyNodes.Add(node);
+                        ReadyNodes.Remove(node);
+                    }
+                    else
+                    {
+                        if (!ReadyNodes.Contains(node))
+                        {
+                            ReadyNodes.Add(node);
+                        }
                     }
                 }
             }
+
         }
 
         /// <summary>
@@ -91,7 +120,7 @@ namespace LNDroneController.LND
 
         public void Dispose()
         {
-            foreach(var node in Nodes)
+            foreach (var node in Nodes)
             {
                 node.Dispose();
             }
